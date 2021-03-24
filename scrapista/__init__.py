@@ -1,1 +1,1 @@
-from scrapista.scrapers import AmazonScraper
+from scrapista.amazon import AmazonScraper
