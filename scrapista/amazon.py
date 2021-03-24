@@ -12,9 +12,10 @@ class AmazonScraper:
         This class has some methods that scrape the amazon website 
         and return you some data. 
     """
-    def __init__(self,headers,base_url="https://www.amazon.de"):
+    def __init__(self,headers,base_url="https://www.amazon.de",params={"language": "en", "currency": "USD"}):
         self.base_url = base_url
         self.headers = headers
+        self.params = params
         self.tracked = []
 
     
@@ -24,8 +25,12 @@ class AmazonScraper:
             Scrape all the instances of a single element
         """
 
-        url_keyword_addition = f"/s?k={keyword}&language=en_GB&currency=USD&ref=nb_sb_noss_2"
-        r = requests.get(self.base_url+url_keyword_addition,headers=self.headers)
+        url_keyword_addition = f"/s?k={keyword}&ref=nb_sb_noss_2"
+        r = requests.get(self.base_url+url_keyword_addition,headers=self.headers,params=self.params)
+
+        if not r.ok:
+            raise BaseException("unsuccessful request to: " + r.url)
+
         soup = BeautifulSoup(r.content, "html.parser")
         groups = soup.select(".a-section.a-spacing-medium")
 
@@ -44,6 +49,7 @@ class AmazonScraper:
 
             try: 
                 source = image["src"]
+                source = source.replace("www.amazon.de","www.amazon.com")
             except: 
                 source = None
 
@@ -60,6 +66,7 @@ class AmazonScraper:
 
             try: 
                 product_url = self.base_url + name_tag["href"]
+                product_url = product_url.replace("www.amazon.de","www.amazon.com")
             except: 
                 product_url = None
 
@@ -93,7 +100,10 @@ class AmazonScraper:
         for keyword in keywords: 
             self.scrape_keyword(keyword,data_list)
         
-        return data_list[:-1]
+
+        data_list = list(filter(lambda x: any(x.values()), data_list)) 
+
+        return data_list
 
 
     def async_scrape_keywords(self,keywords,data_list=[]): 
@@ -105,7 +115,9 @@ class AmazonScraper:
 
         if type(keywords) != list: 
             raise BaseException("A list type is expected for 'keywords' argument")
-
+        
+        # alternative of ThreadExecutorPool
+        """
         threads = [th.Thread(target=self.scrape_keyword,args=(keyword,data_list)) for keyword in keywords]
 
         for t in threads: 
@@ -113,8 +125,16 @@ class AmazonScraper:
         
         for t in threads: 
             t.join()
+        """
 
-        return data_list[:-1]
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for keyword in keywords: 
+                future = executor.submit(self.scrape_keyword,keyword,data_list)
+
+
+        data_list = list(filter(lambda x: any(x.values()), data_list)) 
+
+        return data_list
 
     
     def track_item(self, url): 
@@ -126,11 +146,11 @@ class AmazonScraper:
         url_list = url.split(self.base_url)
         item_code = url_list[-1]
         url = self.base_url + item_code + "?language=en_GB&currency=USD"
-        r = requests.get(url,headers=self.headers)
+        r = requests.get(url,headers=self.headers,params=self.params)
 
-        if r.status_code not in [200,304,301]:
-            raise BaseException("request not successful")
-
+        if not r.ok:
+            raise BaseException("unsuccessful request to: " + r.url)
+            
         soup = BeautifulSoup(r.content, "html.parser")
 
         title_tag = soup.select_one("#productTitle")
@@ -207,7 +227,6 @@ class AmazonScraper:
             raise BaseException("A list type is expected for 'urls' argument")
 
 
-
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for url in urls: 
                 future = executor.submit(self.track_item,url)
@@ -220,17 +239,17 @@ class AmazonScraper:
         return data_list
 
 
-
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
+params = {
+    "language": "en", 
+    "currency": "USD"
 }
 
-items = [
-    "pencil","cardboard","racket","paddle","book","headphone","water bottle","usb charger","book shelf","paper","markers","pencilcase","notebook","calculator"
-]
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
+}
 
 start = perf_counter()
-scraper = AmazonScraper(headers)
+scraper = AmazonScraper(headers,params=params)
 
 "Sync Single keyword"
 
@@ -239,6 +258,10 @@ scraper = AmazonScraper(headers)
 # print(data)
 
 "Scraping multiple keywords"
+items = [
+    "pencil","cardboard","racket","paddle","book","headphone","water bottle","usb charger","book shelf","paper","markers","pencilcase","notebook","calculator"
+]
+
 "Sync scraping keywords"
 
 # data_list = scraper.scrape_keywords(items)
@@ -246,10 +269,12 @@ scraper = AmazonScraper(headers)
 
 "Async scraping keywords"
 
-data_list = scraper.async_scrape_keywords(items)
-print(len(data_list))
+# data_list = scraper.async_scrape_keywords(items)
+# print(len(data_list))
 
-"Tracking item"
+
+
+"Tracking single item"
 
 # airpod = scraper.track_item("https://www.amazon.de/-/en/Lenovo-IdeaPad-Chromebook-WideView-Tablet/dp/B08CZXFKDP/?_encoding=UTF8&pd_rd_w=wofLG&pf_rd_p=07208ea4-5452-4c67-8f65-44901c0f68eb&pf_rd_r=0JJ8ZD05AEXFSZAQB3TS&pd_rd_r=8c4d6402-ff5e-4ee0-b158-13f872c81f7d&pd_rd_wg=BfT3H&ref_=pd_gw_ci_mcx_mr_hp_d")
 
