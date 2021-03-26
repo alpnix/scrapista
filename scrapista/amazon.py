@@ -3,7 +3,6 @@ from time import perf_counter
 import concurrent.futures
 import threading as th
 import requests
-import re
 
 
 
@@ -72,7 +71,7 @@ class AmazonScraper:
 
             laptop_object = {
                 "img_source": source,
-                "stars": star_amount,
+                "stars(out of 5)": star_amount,
                 "price": price_amount,
                 "name": product_name,
                 "url": product_url
@@ -184,7 +183,7 @@ class AmazonScraper:
 
         item_object = {
             "title": title,
-            "stars": stars,
+            "stars(out of 5)": stars,
             "price": price,
         }
 
