@@ -1,4 +1,4 @@
-from scrapista.helpers.helpers import *
+from helpers.helpers import *
 from bs4 import BeautifulSoup
 from time import perf_counter
 import concurrent.futures
