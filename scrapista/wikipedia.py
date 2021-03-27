@@ -1,3 +1,4 @@
+from scrapista.helpers.helpers import *
 from bs4 import BeautifulSoup
 from time import perf_counter
 import concurrent.futures
@@ -7,11 +8,12 @@ import re
 import datetime as dt
 
 
+
 class WikiScraper:
 
     def __init__(self,base_url="https://en.wikipedia.org"):
         self.base_url = base_url
-        
+
 
     @property
     def disney_movies_urls(self):
@@ -46,6 +48,7 @@ class WikiScraper:
 
         return links
 
+
     @property
     def highest_grossing_movies_urls(self):
         """
@@ -73,6 +76,42 @@ class WikiScraper:
         return highest_grossing_urls
 
     
+    @property
+    def most_important_people(self):
+        """
+            This function returns the most most important people of all
+            times according to 'Times 100'.
+        """
+
+        url = "https://en.wikipedia.org/wiki/Time_100"
+        r = requests.get(url)
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        gallery_boxes = soup.select(".gallerybox")
+        gallery_texts = [gallery_box.select_one(".gallerytext") for gallery_box in gallery_boxes]
+
+        people_list = []
+
+        for text in gallery_texts:
+            try:
+                person_tag = text.find("a")
+                name = person_tag.get_text("",strip=True)
+                person_url = self.base_url + person_tag["href"]
+            except Exception as e:
+                print(e)
+                pass
+            else:
+                person_object = {
+                    "name": name,
+                    "person_url": person_url,
+                }
+
+                people_list.append(person_object)
+
+
+        return people_list
+
+
     def scrape_movie_info(self,url): 
         """
             You need to pass a wikipedia movie url into this function
@@ -84,6 +123,8 @@ class WikiScraper:
 
         info_box = soup.select_one(".infobox.vevent")
 
+        if not info_box: 
+            return
 
         for sup in info_box.find_all("sup"): 
             sup.decompose()
@@ -129,41 +170,9 @@ class WikiScraper:
             del movie_info["Running time"]
         
 
-        # converting box office and budget into integer values
-        def money_string_to_int(key):
-
-            currency = movie_info[key][0]
-            movie_info[key] = movie_info[key].replace(currency,"")
-            movie_info[key] = movie_info[key].strip()
-
-            money_pattern = "(\d+-\d+|\d+\.\d+|\d+)"
-            money_result = re.findall(money_pattern,movie_info[key])
-            if not money_result:
-                money_result = re.findall("\d+", movie_info[key])
-
-            scale_pattern = "\w+"
-            scale_result = re.findall(scale_pattern, movie_info[key])[-1]
-
-            if scale_result == "billion": 
-                scale = 1_000_000_00
-            elif scale_result == "million": 
-                scale = 1_000_000
-
-            movies_monies = money_result
-
-            for idx, money in enumerate(movies_monies):
-                money = float(money)
-                movies_monies[idx] = money * scale
-
-            if len(movies_monies) == 1: 
-                movies_monies = movies_monies[0]
-
-            return (currency, movies_monies)
-
-
         # getting the gross of the movie
         try: 
-            currency, gross = money_string_to_int("Box office")
+            currency, gross = money_string_to_int(movie_info,"Box office")
             movie_info[f"Gross({currency})"] = gross
         except Exception as e:
             print(e)
@@ -172,7 +181,7 @@ class WikiScraper:
             del movie_info["Box office"]
 
         try: 
-            currency, budget = money_string_to_int("Budget")
+            currency, budget = money_string_to_int(movie_info,"Budget")
             movie_info[f"Budget({currency})"] = budget
         except Exception as e:
             print(e)
@@ -200,6 +209,122 @@ class WikiScraper:
 
         return movies_urls
             
+        
+    def scrape_notable_movies_by_year(self,year):
+        """
+            This function expects a year and scrapes the notable movies that 
+            were released in that year.
+        """
+
+        put_year_limit(year,1920)
+
+
+        url = f"https://en.wikipedia.org/wiki/{year}_in_film"
+        r = requests.get(url)
+
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        lists = []
+
+        for header in soup.find_all("h3"):
+            ul = header.find_next("ul") 
+            if ul:
+                lists.append(ul)
+
+        def scrape_movies_year_list(ul):
+            list_items = ul.find_all("li")
+
+            for idx, item in enumerate(list_items):
+                movie_object = {}
+                try: 
+                    movie_tag = item.find("i").find("a")
+                    movie_title = movie_tag.get_text("",strip=True)
+                    movie_url = movie_tag["href"]
+                except Exception as e:
+                    pass
+                else:
+                    movie_object["title"] = movie_title
+                    movie_object["movie_url"] = self.base_url + movie_url
+                    return movie_object
+
+        movie_list = []
+
+        for ul in lists: 
+            movie_data = scrape_movies_year_list(ul)
+            if movie_data and movie_data not in movie_list:
+                movie_list.append(movie_data)
+
+        if year >= 2004: 
+
+            table_body = soup.select_one(".wikitable.sortable tbody")
+
+            for row in table_body.find_all("tr"):
+                try: 
+                    movie_tag = row.find("td").find("a")
+                    movie_url = self.base_url + movie_tag["href"]
+                    movie_title = movie_tag.get_text("",strip=True)
+                except Exception as e:
+                    print(e) 
+                    pass
+                else:
+                    movie_object = {
+                        "title": movie_title,
+                        "movie_url": movie_url
+                    }
+                    movie_list.append(movie_object)
+                
+            
+        return movie_list
+
+
+    def scrape_american_movies_by_year(self,year):
+        """
+            Scrapes the american movies by the year that was passed into
+            the method.
+        """
+
+        put_year_limit(year,1920)
+
+        url = f"https://en.wikipedia.org/wiki/List_of_American_films_of_" + str(year)
+        r = requests.get(url)
+
+        soup = BeautifulSoup(r.content, "html.parser")
+        tables = soup.select(".wikitable")
+        title_index = 0
+
+        movie_list = []
+
+        for table in tables: 
+            head = table.find("thead")
+            try: 
+                for idx, headers in enumerate(head.find_all("th")):
+                    if headers.get_text("",strip=True):
+                        title_index = idx
+            except Exception as e: 
+                print(e)
+                pass
+
+            body = table.find("tbody")
+
+            for row in body.find_all("tr"):
+                try: 
+                    element = row.find_all("td")[title_index]
+                    movie_tag = element.find("a")
+                    movie_url = self.base_url + movie_tag["href"]
+                    movie_title = movie_tag.get_text("",strip=True)
+                except Exception as e: 
+                    print(e)
+                    pass
+                else: 
+                    movie_object = {
+                        "title": movie_title,
+                        "movie_url": movie_url
+                    }
+                    movie_list.append(movie_object)
+
+
+        return movie_list
+
 
     def scrape_person_info(self,url="",name=""): 
         """
@@ -298,21 +423,10 @@ class WikiScraper:
         except Exception as e:
             print(e)
             pass
-                   
-
-        # extracting the age from the 'born' key
-        def get_age(key):
-            age_pattern = "\(age \d+\)"
-            results = re.findall(age_pattern,person_info[key])
-            result = results[0]
-            person_info[key] = person_info[key].replace(result,"")
-            if re.findall("^| ",person_info[key]):
-                person_info[key] = person_info[key].replace("| ","")
-            age = int(re.findall("\d+",result)[0])
-            return age
+                        
 
         try: 
-            age = get_age("Born")
+            age = get_age(person_info,"Born")
         except Exception as e: 
             print(e)
             try:
@@ -325,16 +439,8 @@ class WikiScraper:
             person_info["Age"] = age
 
 
-        # creating a datetime object of the person's birth time
-        def get_bdate(key):
-            date_pattern = "\w+ \d+, \d+"
-            result = re.findall(date_pattern,person_info[key])[0]
-            person_info[key] = person_info[key].replace(result,"")
-            bdate = dt.datetime.strptime(result,"%B %d, %Y")
-            return bdate
-
         try: 
-            bdate = get_bdate("Born")
+            bdate = get_bdate(person_info,"Born")
         except Exception as e: 
             print("born2 |",e)
             try: 
@@ -476,6 +582,7 @@ class WikiScraper:
         return cast_urls
 
 
+
 ws = WikiScraper()
 start = perf_counter()
 
@@ -556,6 +663,32 @@ people = [
 
 # print(all_movie_data)
 # print(len(all_movie_data))
+
+
+"scraping notable movies by year they were released"
+
+# for year in range(1920,2021):
+#     with concurrent.futures.ThreadPoolExecutor() as executor: 
+#         future = executor.submit(ws.scrape_notable_movies_by_year,year)
+#         movie_list = future.result()
+#         # print(movie_list)
+#         print(f"{year}: {len(movie_list)}")
+
+
+"scraping american movies by year"
+
+# movie_data_list = ws.scrape_american_movies_by_year(1920)
+
+# print(movie_data_list)
+# print(len(movie_data_list))
+
+
+"getting most important people"
+
+people = ws.most_important_people
+
+print(people)
+print(len(people))
 
 
 

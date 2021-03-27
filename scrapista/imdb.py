@@ -1,3 +1,4 @@
+from scrapista.helpers.helpers import *
 from bs4 import BeautifulSoup
 from time import perf_counter
 import concurrent.futures
@@ -51,8 +52,7 @@ class ImdbScraper:
     @property
     def most_popular_movies_data(self):
         """
-            This method returns the most popular movies by the date the method is 
-            called. It returns 100 movies. 
+            This method returns the most popular movies by the current date. It returns 100 movies. 
         """
         url = "https://www.imdb.com/chart/moviemeter/?ref_=nv_mv_mpm"
 
@@ -79,37 +79,6 @@ class ImdbScraper:
 
         return data_list    
         
-
-    def scrape_actors_by_birthdate(self,date=""):
-        """
-            This method returns the actors that were born today or optionally 
-            you can pass a day as an argument and get the actors that were born
-            in that day. P.s. date format is month-day eg '03-26'
-        """
-
-        if not date: 
-            now = dt.datetime.now()
-            date = f"{now.month}-{now.day}"
-
-        url = "https://www.imdb.com/search/name/?birth_monthday=" + date
-
-        r = requests.get(url)
-
-        soup = BeautifulSoup(r.content, "html.parser")
-
-        actor_cards = [card for card in soup.select(".lister-item.mode-detail")]
-        actor_tags = [card.find("h3").find("a") for card in actor_cards]
-
-        try:
-            actor_names = [tag.get_text("",strip=True) for tag in actor_tags]
-
-        except Exception as e: 
-            print(e)
-            return []
-        
-
-        return actor_names
-
 
     def scrape_movies_by_genre(self,genre):
         """
@@ -195,14 +164,6 @@ class ImdbScraper:
 
         review_tag, critic_tag = soup.select(".titleReviewBarItem.titleReviewbarItemBorder .subText a")
 
-        def get_count(str):
-            str = str.replace(",","")
-            results = re.findall("\d+", str)
-            if len(results) == 1: 
-                return int(results[0])
-            else:
-                return results
-
         review_count = get_count(review_tag.get_text("",strip=True))
         critic_count = get_count(critic_tag.get_text("",strip=True))
 
@@ -216,9 +177,7 @@ class ImdbScraper:
                 print(e)
                 pass
             
-
-
-
+        
         summary = soup.select_one(".plot_summary")
 
 
@@ -279,6 +238,38 @@ class ImdbScraper:
         return all_movie_list
 
 
+    def scrape_actors_by_birthdate(self,date=""):
+        """
+            This method returns the actors that were born today or optionally 
+            you can pass a day as an argument and get the actors that were born
+            in that day. P.s. date format is month-day eg '03-26'
+        """
+
+        if not date: 
+            now = dt.datetime.now()
+            date = f"{now.month}-{now.day}"
+
+        url = "https://www.imdb.com/search/name/?birth_monthday=" + date
+
+        r = requests.get(url)
+
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        actor_cards = [card for card in soup.select(".lister-item.mode-detail")]
+        actor_tags = [card.find("h3").find("a") for card in actor_cards]
+
+        try:
+            actor_names = [tag.get_text("",strip=True) for tag in actor_tags]
+
+        except Exception as e: 
+            print(e)
+            return []
+        
+
+        return actor_names
+
+
+
 
 
 scraper = ImdbScraper()
@@ -312,9 +303,16 @@ start = perf_counter()
 
 "getting 50 movies urls by their genres"
 
-horror_urls = scraper.scrape_movies_by_genre ("adventure")
+# horror_urls = scraper.scrape_movies_by_genre("adventure")
 
-print(horror_urls)
+# print(horror_urls)
+
+
+"scraping the names and the links of most popular movies"
+
+# popular_movies = scraper.most_popular_movies_data
+
+# print(popular_movies)
 
 
 "scraping actors that were born today"
@@ -323,12 +321,6 @@ print(horror_urls)
 
 # print(born_today)
 
-
-"scraping the names and the links of most popular movies"
-
-# popular_movies = scraper.most_popular_movies_data
-
-# print(popular_movies)
 
 
 
