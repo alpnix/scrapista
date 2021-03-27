@@ -5,7 +5,6 @@ import threading as th
 import datetime as dt
 import requests
 import re
-import pandas as pd
 
 
 class ImdbScraper:

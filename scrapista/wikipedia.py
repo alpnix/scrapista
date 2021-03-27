@@ -484,9 +484,9 @@ start = perf_counter()
 
 "scraping a movie info"
 
-person_info = ws.scrape_movie_info("https://en.wikipedia.org/wiki/Finding_Dory")
+# person_info = ws.scrape_movie_info("https://en.wikipedia.org/wiki/Finding_Dory")
 
-print(person_info)
+# print(person_info)
 
 "scraping a person's info"
 
@@ -503,7 +503,9 @@ print(person_info)
 
 "scraping info of multiple people"
 
-people = ["Elon Musk","Chris Evans","Gal Gadot","Jeff Bezos","Lionel Messi","Cristiano Ronaldo","Elon Musk","Chris Evans","Gal Gadot","Jeff Bezos","Lionel Messi","Cristiano Ronaldo","Elon Musk","Chris Evans","Gal Gadot","Jeff Bezos","Lionel Messi","Cristiano Ronaldo"]
+people = [
+    "Elon Musk","Chris Evans","Gal Gadot","Jeff Bezos","Lionel Messi","Cristiano Ronaldo","Elon Musk","Chris Evans","Gal Gadot","Jeff Bezos","Lionel Messi","Cristiano Ronaldo","Elon Musk","Chris Evans","Gal Gadot","Jeff Bezos","Lionel Messi","Cristiano Ronaldo"
+]
 
 
 "scraping people info synchronously"

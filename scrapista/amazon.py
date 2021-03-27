@@ -11,11 +11,20 @@ class AmazonScraper:
         This class has some methods that scrape the amazon website 
         and return you some data. 
     """
-    def __init__(self,headers,base_url="https://www.amazon.de",params={"language": "en", "currency": "USD"}):
+    def __init__(self,headers,base_url="https://www.amazon.com",params={"language": "en", "currency": "USD"}):
         self.base_url = base_url
         self.headers = headers
         self.params = params
         self.tracked = []
+        
+        r = requests.get(f"https://www.x-rates.com/calculator/?from=EUR&to={params['currency']}&amount=1")
+        soup = BeautifulSoup(r.content, "html.parser")
+        
+        container = soup.select_one(".ccOutputRslt")
+        for span in container.find_all("span"):
+            span.decompose()
+
+        self._currency_ratio = float(container.get_text("",strip=True))
 
     
     def scrape_keyword(self,keyword,data_list=[]):
@@ -25,13 +34,18 @@ class AmazonScraper:
         """
 
         url_keyword_addition = f"/s?k={keyword}&ref=nb_sb_noss_2"
-        r = requests.get(self.base_url+url_keyword_addition,headers=self.headers,params=self.params)
+        url = self.base_url+url_keyword_addition
+        url = url.replace("https://www.amazon.com","https://www.amazon.de")
+        r = requests.get(url,headers=self.headers,params=self.params)
+
 
         if not r.ok:
             raise BaseException("unsuccessful request to: " + r.url)
 
         soup = BeautifulSoup(r.content, "html.parser")
-        groups = soup.select(".a-section.a-spacing-medium")
+        groups = soup.select(".s-result-item")
+
+        print(r.url)
 
         for group in groups: 
 
@@ -41,43 +55,44 @@ class AmazonScraper:
             price = group.select_one(".a-price-whole")
 
             try: 
-                price_amount = price.get_text(strip=True).replace(",",".")
-                price_amount = float(price_amount)
+                price_amount = price.get_text(strip=True).replace(",","")
+                price_amount = round(float(price_amount) * self._currency_ratio,2)
             except: 
-                price_amount = None
+                continue
 
             try: 
                 source = image["src"]
                 source = source.replace("www.amazon.de","www.amazon.com")
             except: 
-                source = None
+                source = "N/A"
 
             try: 
                 star_amount = stars.get_text(strip=True)[:3].replace(",",".")
                 star_amount = float(star_amount)
             except: 
-                star_amount = None
+                star_amount = "N/A"
 
             try:
                 product_name = name_tag.get_text("|",strip=True)
             except: 
-                product_name = None
+                product_name = "N/A"
 
             try: 
                 product_url = self.base_url + name_tag["href"]
-                product_url = product_url.replace("www.amazon.de","www.amazon.com")
             except: 
-                product_url = None
+                if product_name == "N/A":
+                    continue
+                product_url = "N/A"
 
-            laptop_object = {
-                "img_source": source,
-                "stars(out of 5)": star_amount,
-                "price": price_amount,
+            item_info = {
                 "name": product_name,
-                "url": product_url
+                f"price({self.params['currency']})": price_amount,
+                "stars(5)": star_amount,
+                "url": product_url,
+                "img_source": source,
             }
             
-            data_list.append(laptop_object)
+            data_list.append(item_info)
 
         
         data_list = list(filter(lambda x: any(x.values()), data_list)) 
@@ -142,9 +157,7 @@ class AmazonScraper:
             You will pass a list of urls and an interval, it returns the current price and state of all those items
         """
 
-        url_list = url.split(self.base_url)
-        item_code = url_list[-1]
-        url = self.base_url + item_code + "?language=en_GB&currency=USD"
+        url = url.replace("https://www.amazon.com","https://www.amazon.de")
         r = requests.get(url,headers=self.headers,params=self.params)
 
         if not r.ok:
@@ -176,7 +189,7 @@ class AmazonScraper:
             price = price.replace(",",".")
             price_list = price.split(".")
             price = price_list[0] + "." + price_list[1][:2]
-            price = float(price)            
+            price = round(float(price) * self._currency_ratio,2)          
         except Exception as e: 
             price = None
 
@@ -247,6 +260,7 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
 }
 
+
 start = perf_counter()
 scraper = AmazonScraper(headers,params=params)
 
@@ -294,5 +308,10 @@ urls = [
 # print(data_list)
 
 
+"display tracked items"
+
+# print(scraper.tracked)
+
+
 end = perf_counter()
-print(f"In total it took {round(end-start,2)} seconds")
+print(f"In total it took {end-start:.2f} seconds")
