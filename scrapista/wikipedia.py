@@ -1,4 +1,4 @@
-from helpers.helpers import *
+from scrapista.helpers.helpers import put_year_limit,get_age,get_bdate,money_string_to_int
 from bs4 import BeautifulSoup
 from time import perf_counter
 import concurrent.futures
@@ -542,12 +542,15 @@ class WikiScraper:
         return person_info
 
 
-    def async_scrape_person_info(self,urls="",names=""):
+    def async_scrape_people_info(self,urls="",names=""):
         """
             This function scrapes each person's info by threading. 
             It is much more efficient than running 'scrape_movie_info'
             method synchronously
-        """
+        """ 
+
+        if type(urls) == dict:
+            urls = [person["person_url"] for person in urls]
 
         people_info = []
 

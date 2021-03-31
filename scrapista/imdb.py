@@ -1,4 +1,4 @@
-from helpers.helpers import *
+from scrapista.helpers.helpers import get_count
 from bs4 import BeautifulSoup
 from time import perf_counter
 import concurrent.futures
@@ -267,8 +267,6 @@ class ImdbScraper:
         
 
         return actor_names
-
-
 
 
 

@@ -1,20 +1,18 @@
 from setuptools import setup, find_packages
-import codecs
-import os
 
-here = os.path.abspath(os.path.dirname(__file__))
-__version__ = find_version('scrapista/__init__.py')
+def get_readme():
+    with open("README.md", encoding="utf-8") as fh:
+        long_description = "\n" + fh.read()
 
-with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
-    long_description = "\n" + fh.read()
+    return long_description
 
-VERSION = __version__
+VERSION = "1.0.8"
 REQUIREMENTS = [
     'requests', 
-    'bs4'
+    'beautifulsoup4'
 ]
 DESCRIPTION = 'Scrape most popular websites easily'
-LONG_DESCRIPTION = 'This is a Python package that helps with scraping some of the most popular websites such as Wikipedia, Amazon, etc.'
+
 
 # Setting up
 setup(
@@ -26,19 +24,18 @@ setup(
     url='https://github.com/alpnix/scrapista',
     description=DESCRIPTION,
     long_description_content_type="text/markdown",
-    long_description=long_description,
+    long_description=get_readme(),
     packages=find_packages(),
-    install_requires=['requests', 'beautifulsoup4'],
-    keywords=['python', 'scrape', 'amazon', 'wikipedia', 'web', 'data mining', 'web scraping'],
+    install_requires=REQUIREMENTS,
     classifiers=[
         "Development Status :: 1 - Planning",
         "Intended Audience :: Developers",
-        'License :: MIT License',
+        'License :: OSI Approved :: MIT License',
         "Programming Language :: Python :: 3",
         "Operating System :: Unix",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: Microsoft :: Windows",
-        "Topic :: Web Scraping :: Data Mining",
     ],
-    keywords=['python', 'scrape', 'amazon', 'wikipedia', 'web', 'data mining', 'web scraping']
+    keywords=['python', 'scrape', 'amazon', 'wikipedia', 'web', 'data mining', 'web scraping'],
+    include_package_data=True,
 )

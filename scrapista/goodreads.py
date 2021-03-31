@@ -1,4 +1,4 @@
-from helpers.helpers import get_count
+from scrapista.helpers.helpers import get_count, get_word_info
 from bs4 import BeautifulSoup
 from time import perf_counter
 import concurrent.futures
@@ -23,7 +23,68 @@ class GoodReadsScraper:
         """
 
         url = "https://www.goodreads.com/quotes?page=1"
-        r = requests.get(url)
+        try:
+            r = requests.get(url)
+        except:
+            return "Connection Error"
+
+        soup = BeautifulSoup(r.content, "html.parser")
+        quotes = soup.select(".quote")
+
+        quotes_list = []
+        
+        for quote in quotes: 
+            try: 
+                like_tag = quote.select_one(".right .smallText")
+                likes = int(get_count(like_tag.get_text("",strip=True)))
+            except Exception as e:
+                likes = "N/A"
+                print("likes|", e)
+                pass
+
+            try:
+                quote_tag = quote.select_one(".quoteText")
+                for idx, quoteText in enumerate(quote_tag.stripped_strings): 
+                    if idx == 0:
+                        quote_text = quoteText
+
+            except Exception as e:
+                print("quote|", e)
+                continue
+
+            try: 
+                by_tag = quote.select_one(".authorOrTitle")
+                by = by_tag.get_text("",strip=True)
+            except Exception as e:
+                print("by|", e)
+                by = "Anonymous"
+            
+
+            quote_object = {
+                "quote": quote_text,
+                "by": by,
+                "likes": likes
+            }
+
+            quotes_list.append(quote_object)
+        
+        return quotes_list
+
+
+    def scrape_custom_quotes(self,tag,page=1):
+        """
+            This function expects a tag of a quote and a page number 
+            and it will return a quote object in json form.
+        """
+
+        if page > 100: 
+            raise(BaseException("page number should be between 1-100"))
+
+        url = f"https://www.goodreads.com/quotes/tag/{tag}?page={page}"
+        try:
+            r = requests.get(url)
+        except Exception as e:
+            return "Connection Error"
 
         soup = BeautifulSoup(r.content, "html.parser")
         quotes = soup.select(".quote")
@@ -71,7 +132,10 @@ class GoodReadsScraper:
     def scrape_books_by_genre(self,genre): 
         
         url = "https://www.goodreads.com/genres/" + genre
-        r = requests.get(url)
+        try:
+            r = requests.get(url)
+        except: 
+            return "Connection Error"
 
         soup = BeautifulSoup(r.content, "html.parser")
 
@@ -142,7 +206,10 @@ class GoodReadsScraper:
             goodreads url of that book into the function
         """
 
-        r = requests.get(url)
+        try:
+            r = requests.get(url)
+        except: 
+            return "Connection Error"
 
         soup = BeautifulSoup(r.content, "html.parser")
 
@@ -257,6 +324,91 @@ urls = [
 # book_data_list = gr.async_scrape_books(urls)
 
 # print(book_data_list)
+
+
+
+"scrape a page of quotes of a tag"
+
+# quote_list = gr.scrape_custom_quotes("life")
+
+# print(quote_list)
+# print(len(quote_list))
+
+
+"scraping quotes by the custom values put into function"
+"sync: 139.49s", "async: 271.80s"
+# total_quotes = []
+# for i in range(50):
+#     with concurrent.futures.ThreadPoolExecutor() as executor:
+#         future = executor.submit(gr.scrape_custom_quotes,tag="love",page=i)
+#         quote_list = future.result()
+#         total_quotes.extend(quote_list)
+
+#     print(i, "done")
+
+# print(len(total_quotes))
+
+
+
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
+}
+
+"scraping TransferMarkt"
+
+# r = requests.get("https://www.transfermarkt.com/erling-haaland/profil/spieler/418560",headers=headers)
+
+# soup = BeautifulSoup(r.content, "html.parser")
+
+# table = soup.select_one(".swiper-slide.swiper-slide-active")
+# try:
+#     progresses = table.select_one(".quoten")
+#     league_name = soup.select_one(".leistungsdatenHeadline")
+    
+#     rows = table.select(".zeile")
+# except Exception as e:
+#     print(e)
+#     print(soup)
+#     quit()    
+
+# for row in rows:
+#     try:
+#         header_tag = row.find("span")
+#         header = header_tag.get_text("",strip=True)
+#     except Exception as e: 
+#         print(e)
+#         header = None
+
+
+#     try:
+#         data_tag = row.find("a")
+#         data = data_tag.get_text("",strip=True)
+#     except Exception as e:
+#         print(e)
+#         data = None
+
+#     print(f"{header}| {data}")
+
+
+"scraping Cambridge Dictionary"
+
+
+
+# words = ["deliberate","flush","paraphrase","arctic"]
+
+# word_info_list = [] 
+
+# with concurrent.futures.ThreadPoolExecutor() as executor:
+#     for word in words:
+#         future = executor.submit(get_word_info,word,headers)
+#         word_info_list.append(future.result())
+
+# print(word_info_list)
+
+
+word = get_word_info("lattice",headers)
+
+print(word)
 
 
 

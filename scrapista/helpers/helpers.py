@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 import re
 import datetime as dt
 
@@ -73,3 +75,47 @@ def get_count(str):
         return int(results[0])
     else:
         return results
+
+
+
+# this function scrapes and returns a word object 
+# you have to pass the word and the headers in json formot user-agent key is required
+def get_word_info(word, headers):
+    
+    r = requests.get("https://dictionary.cambridge.org/dictionary/english/"+word, headers=headers)
+
+    soup = BeautifulSoup(r.content, "html.parser")
+
+    word_info = {}
+    word_info["word"] = word
+    try:
+        form = soup.select_one(".pos.dpos").get_text(" ",strip=True)
+    except:
+        form = None
+    else:
+        word_info["form"] = form 
+    try:
+        level = soup.select_one(".epp-xref.dxref").get_text(" ",strip=True)
+    except:
+        level = None
+    else:
+        word_info["level"] = level
+    try:
+        definition = soup.select_one(".def.ddef_d.db").get_text(" ",strip=True)
+    except:
+        definition = None
+    else:
+        word_info["definition"] = definition
+
+    try:
+        sentence_example_tags = soup.select(".eg.deg")
+        sentence_examples = [sentence_example_tag.get_text(" ",strip=True) for sentence_example_tag in sentence_example_tags]
+    except:
+        sentence_examples = []
+    else:
+        word_info["sentence_examples"] = sentence_examples
+
+    if not all(word_info.values()):
+        return "No such word exists in the database"
+
+    return word_info
