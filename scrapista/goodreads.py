@@ -10,7 +10,7 @@ import datetime as dt
 
 class GoodReadsScraper:
     
-    def __init__(self,base_url="https://www.goodreads.com/genres/mystery"):
+    def __init__(self,base_url="https://www.goodreads.com"):
         self.base_url = base_url
         pass
 
