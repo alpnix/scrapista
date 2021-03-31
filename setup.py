@@ -6,7 +6,7 @@ def get_readme():
 
     return long_description
 
-VERSION = "1.0.8"
+VERSION = "0.0.6"
 REQUIREMENTS = [
     'requests', 
     'beautifulsoup4'
