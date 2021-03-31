@@ -1,0 +1,46 @@
+Metadata-Version: 2.1
+Name: scrapista
+Version: 1.0.8
+Summary: Scrape most popular websites easily
+Home-page: https://github.com/alpnix/scrapista
+Author: Alp Niksarlı
+Author-email: alp.niksarli@gmail.com
+License: MIT
+Description: 
+        # Scrapista
+        Scrapista helps with scraping datasets from some of the most popular websites such as Wikipedia, Amazon, etc.
+        
+        
+        ## Installation
+        ---
+        <!-- Github Markdown -->
+        ```
+        $ python -m pip install scrapista
+        ```
+        
+        ## Getting started to use the Amazon scraper: 
+        ```python 
+        from scrapista import AmazonScraper
+        
+        # sample headers
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"}
+        
+        base_url = "https://www.amazon.de"
+        
+        scraper = AmazonScraper(headers,base_url)
+        data_list = scraper.scrape_keywords(["pencil","couch"])
+        
+        print(len(data_list)) # 120
+        ```
+        
+        
+Keywords: python,scrape,amazon,wikipedia,web,data mining,web scraping
+Platform: UNKNOWN
+Classifier: Development Status :: 1 - Planning
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: Unix
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Description-Content-Type: text/markdown
