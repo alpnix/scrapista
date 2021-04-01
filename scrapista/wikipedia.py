@@ -11,12 +11,12 @@ import datetime as dt
 
 class WikiScraper:
 
-    def __init__(self,base_url="https://en.wikipedia.org"):
+    def __init__(self,base_url="https://en.wikipedia.org",headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"},):
         self.base_url = base_url
 
 
     @property
-    def disney_movies_urls(self):
+    def disney_movies(self):
         """
             This property returns the disney movies' urls 
             from the wikipedia page
@@ -27,30 +27,45 @@ class WikiScraper:
         tables = soup.select(".wikitable.sortable tbody")
 
         data_points = []
-        links = []
+        data_list = []
         for table in tables: 
             rows = table.find_all("tr")
             for row in rows: 
                 try: 
                     data_points.append(row.find_all("td")[1])
                 except Exception as e:  
+                    print(e)
                     pass
             
-        for data in data_points: 
+        for data in data_points:
+            disney_movie = {} 
+            link_text = data.find("a")
+
+            try:
+                name = link_text.get_text("",strip=True)
+            except Exception as e:
+                print(e)
+                pass
+            else:
+                disney_movie["name"] = name
+
             try: 
-                link = data.find("a")["href"]
+                link = link_text["href"]
             except Exception as e: 
+                print(e)
                 pass
             else: 
                 if not(link[0] == "#"):
                     link = self.base_url + link 
-                    links.append(link)
+                    disney_movie["url"] = link
 
-        return links
+            data_list.append(disney_movie)
+
+        return data_list
 
 
     @property
-    def highest_grossing_movies_urls(self):
+    def highest_grossing_movies(self):
         """
             This function returns the urls of the highest grossing movies 
             in the world righ now.
@@ -61,19 +76,32 @@ class WikiScraper:
 
         table = soup.select_one(".wikitable.sortable").find("tbody")
 
-        highest_grossing_urls = []
+        highest_grossing_movies = []
 
         for row in table.find_all("tr"):
+
+            movie_object = {}
+            link_tag = row.find_all("th")[0].find("a")
+
             try:
-                link_tag = row.find_all("th")[0].find("a")
+                movie_name = link_tag.get_text("",strip=True)
+            except Exception as e:
+                pass 
+            else:
+                movie_object["name"] = movie_name
+
+            try:    
                 link = link_tag["href"]
+                link = self.base_url+link
             except Exception as e:
                 print(e)
                 pass
             else:
-                highest_grossing_urls.append(self.base_url+link)
+                movie_object["url"] = link
+
+            highest_grossing_movies.append(movie_object)
         
-        return highest_grossing_urls
+        return highest_grossing_movies
 
     
     @property
@@ -112,7 +140,7 @@ class WikiScraper:
         return people_list
 
 
-    def scrape_movie_info(self,url): 
+    def scrape_movie(self,url): 
         """
             You need to pass a wikipedia movie url into this function
             and it will return the info about that movie
@@ -150,6 +178,7 @@ class WikiScraper:
                     header = row.find("th").get_text(" ", strip=True)
                     data = row.find("td").get_text(" ", strip=True)
                 except Exception as e: 
+                    print(e)
                     pass
                 else: 
                     movie_info[header] = data
@@ -193,7 +222,7 @@ class WikiScraper:
         return movie_info
 
 
-    def async_scrape_movies_info(self,urls):
+    def async_scrape_movies(self,urls):
         """
             This function utlizies the 'scrape_movie_info' method 
             in multiple threads 
@@ -241,6 +270,7 @@ class WikiScraper:
                     movie_title = movie_tag.get_text("",strip=True)
                     movie_url = movie_tag["href"]
                 except Exception as e:
+                    print(e)
                     pass
                 else:
                     movie_object["title"] = movie_title
@@ -326,7 +356,7 @@ class WikiScraper:
         return movie_list
 
 
-    def scrape_person_info(self,url="",name=""): 
+    def scrape_person(self,url="",name=""): 
         """
             This function is similar to the scraping movie info function
             but you pass in a person page's url into it and it scrapes info 
@@ -359,6 +389,7 @@ class WikiScraper:
         try:
             info_box.find(class_="honorific-suffix").decompose()
         except Exception as e:
+            print(e)
             pass
 
 
@@ -381,6 +412,7 @@ class WikiScraper:
                 try: 
                     header = row.find("th").get_text(" ", strip=True).replace("\xa0"," ")
                 except Exception as e: 
+                    print(e)
                     header = "Miscellaneous"
                 finally:
                     items = [li.get_text(" ",strip=True).replace("\xa0"," ").replace("\u200b","") for li in row.find("ul").find_all("li")]
@@ -393,6 +425,7 @@ class WikiScraper:
                     header = row.find("th").string.replace("\xa0"," ")
                     data = row.find("td").get_text(" ",strip=True).replace("\xa0"," ").replace("\u200b","").replace("   "," ").replace("  ", " ").replace(" ,",",")
                 except Exception as e: 
+                    print(e)
                     pass
                 else: 
                     person_info[header] = data
@@ -542,7 +575,7 @@ class WikiScraper:
         return person_info
 
 
-    def async_scrape_people_info(self,urls="",names=""):
+    def async_scrape_people(self,urls="",names=""):
         """
             This function scrapes each person's info by threading. 
             It is much more efficient than running 'scrape_movie_info'
@@ -570,19 +603,105 @@ class WikiScraper:
         return people_info
 
 
-    def scrape_movie_cast(self,url):
-        
+    def scrape_custom(self,url="",title=""):
+        """
+            This method is a vague one, you can pass in the url of an event, company, or even a place. This function will return the data on the info box if present, otherwise it will return None 
+        """
+        if not url:
+            url = "https://en.wikipedia.org/wiki/" + title
         r = requests.get(url)
         soup = BeautifulSoup(r.content, "html.parser")
 
-        cast_header = soup.find(id="Cast")
+        info_box = soup.select_one(".infobox")
 
-        cast_list = cast_header.find_next("ul")
+        if not info_box: 
+            return
 
-        cast_items = [li.find("a") for li in cast_list.find_all("li")]
-        cast_urls = [self.base_url+a["href"] for a in cast_items]
+        for sup in info_box.find_all("sup"):
+            sup.decompose()
+
+        for br in info_box.find_all("br"):
+            soup.i.string = " "
+            br.replace_with(soup.i)
+
+        for hidden in soup.find_all(style="display:none"): 
+            hidden.decompose()
+
+        custom_info = {}
+
+        caption = info_box.find("caption")
+        if caption: 
+            custom_info["Title"] = caption.get_text(" ",strip=True).replace("\xa0", " ")
+
+
+        for idx, row in enumerate(info_box.find_all("tr")):
+
+            if idx == 0 and "Title" not in custom_info.keys(): 
+                custom_info["Title"] = row.get_text("",strip=True).replace("\xa0", " ")
+            
+            if row.find("td") and row.find("ul"):
+                try: 
+                    header = row.find("th").get_text(" ", strip=True).replace("\xa0"," ")
+                    items = [li.get_text(" ",strip=True).replace("\xa0"," ") for li in row.find("ul").find_all("li")]
+                except Exception as e:
+                    print(e)
+                else:
+                    custom_info[header] = items
+
+            else: 
+                try: 
+                    go_to_url = row.select_one(".url")
+                    header = row.find("th").get_text(" ", strip=True).replace("\xa0"," ").replace("•","").strip()
+                    data = row.find("td").get_text(" ", strip=True).replace("\xa0"," ").replace("\ufeff", "").replace("•","").strip()
+                    if go_to_url:
+                        data = go_to_url.find("a")["href"]
+                        
+                except Exception as e: 
+                    print(e)
+                    pass
+                else: 
+                    custom_info[header] = data
+
+
+        # converting running time to integers
+        try: 
+            minute_number_pattern = re.compile("\d+")
+            minutes_unit_pattern = re.compile("\w+")
+
+            minutes = int(re.findall(minute_number_pattern,custom_info["Running time"])[0])
+            minute_unit = re.findall(minutes_unit_pattern,custom_info["Running time"])[-1]
+            movie_info[f"Running time({minute_unit})"] = minutes
+        except Exception as e:
+            print(e)
+            pass
+        else: 
+            del custom_info["Running time"]
         
-        return cast_urls
+
+        # getting the gross of the movie
+        try: 
+            currency, gross = money_string_to_int(custom_info,"Box office")
+            movie_info[f"Gross({currency})"] = gross
+        except Exception as e:
+            print(e)
+            pass
+        else:
+            del custom_info["Box office"]
+
+        try: 
+            currency, budget = money_string_to_int(custom_info,"Budget")
+            movie_info[f"Budget({currency})"] = budget
+        except Exception as e:
+            print(e)
+            pass
+        else:
+            del custom_info["Budget"]
+
+
+        return custom_info
+
+
+
 
 
 
@@ -697,3 +816,4 @@ class WikiScraper:
 
 # end = perf_counter()
 # print(f"In total it took {round(end-start,2)} second(s)")
+

@@ -10,12 +10,12 @@ import re
 
 class ImdbScraper:
 
-    def __init__(self,base_url="https://www.imdb.com"):
+    def __init__(self,base_url="https://www.imdb.com",headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"}):
         self.base_url = base_url
         pass
 
     @property
-    def top_ranked_movies_data(self):
+    def top_movies(self):
         
         r = requests.get("https://www.imdb.com/chart/top/")
         soup = BeautifulSoup(r.content, "html.parser")
@@ -50,7 +50,7 @@ class ImdbScraper:
 
 
     @property
-    def most_popular_movies_data(self):
+    def most_popular_movies(self):
         """
             This method returns the most popular movies by the current date. It returns 100 movies. 
         """
@@ -238,7 +238,7 @@ class ImdbScraper:
         return all_movie_list
 
 
-    def scrape_actors_by_birthdate(self,date=""):
+    def scrape_actors_by_bdate(self,date=""):
         """
             This method returns the actors that were born today or optionally 
             you can pass a day as an argument and get the actors that were born

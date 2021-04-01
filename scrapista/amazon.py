@@ -11,7 +11,7 @@ class AmazonScraper:
         This class has some methods that scrape the amazon website 
         and return you some data. 
     """
-    def __init__(self,headers,base_url="https://www.amazon.com",params={"language": "en", "currency": "USD"}):
+    def __init__(self,base_url="https://www.amazon.com",headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"},params={"language": "en", "currency": "USD"}):
         self.base_url = base_url
         self.headers = headers
         self.params = params
@@ -35,7 +35,7 @@ class AmazonScraper:
 
         url_keyword_addition = f"/s?k={keyword}&ref=nb_sb_noss_2"
         url = self.base_url+url_keyword_addition
-        url = url.replace("https://www.amazon.com","https://www.amazon.de")
+        url = url.replace(self.base_url,"https://www.amazon.de")
         r = requests.get(url,headers=self.headers,params=self.params)
 
 
@@ -62,7 +62,7 @@ class AmazonScraper:
 
             try: 
                 source = image["src"]
-                source = source.replace("www.amazon.de","www.amazon.com")
+                source = source.replace("www.amazon.de",self.base_url)
             except: 
                 source = "N/A"
 

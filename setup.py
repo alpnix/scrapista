@@ -36,6 +36,6 @@ setup(
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: Microsoft :: Windows",
     ],
-    keywords=['python', 'scrape', 'amazon', 'wikipedia', 'web', 'data mining', 'web scraping'],
+    keywords=['python', 'scrape', 'amazon', 'wikipedia', 'imdb', 'goodreads', 'web', 'data mining', 'web scraping'],
     include_package_data=True,
 )
