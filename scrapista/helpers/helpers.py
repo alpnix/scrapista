@@ -118,3 +118,18 @@ def get_word_info(word, headers):
         return "No such word exists in the database"
 
     return word_info
+
+
+def get_currency_ratio(current,target):
+    r = requests.get(f"https://www.x-rates.com/calculator/?from={current}&to={target}&amount=1")
+
+    soup = BeautifulSoup(r.content, "html.parser")
+
+    container = soup.select_one(".ccOutputRslt")
+    for span in container.find_all("span"):
+        span.decompose()
+    
+    currency_ratio = float(container.get_text("",strip=True))
+
+    return currency_ratio
+
