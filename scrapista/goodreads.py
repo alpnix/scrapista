@@ -266,19 +266,7 @@ class GoodReadsScraper:
         return book_list
 
 
-start = perf_counter()
-scraper = GoodReadsScraper()
 
-adventure_urls = [movie["url"] for movie in scraper.scrape_books_by_genre("adventure")]
-print(len(adventure_urls))
-books_data = scraper.async_scrape_books(adventure_urls[:5])
-
-print(books_data)
-print(len(books_data))
-
-end = perf_counter()
-
-print(f"It took {round(end-start,2)} seconds(s)")
 # start = perf_counter()
 
 # gr = GoodReadsScraper()

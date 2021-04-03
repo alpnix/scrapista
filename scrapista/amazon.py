@@ -257,25 +257,6 @@ class AmazonScraper:
         return data_list
 
 
-start = perf_counter()
-
-scraper = AmazonScraper()
-
-url_data = scraper.scrape_keyword("basketball 1.2m hoop")
-
-
-# data = scraper.scrape_keywords(["mouse","keyboard","monitor","yellow pencilcase"])
-
-# print(data)
-urls = [product["url"] for product in url_data]
-
-data = scraper.async_track_items(urls[:5])
-
-print(data)
-print(len(data))
-
-end = perf_counter()
-print(f"It took {round(end-start,2)} seconds(s)")
 
 # params = {
 #     "language": "en", 

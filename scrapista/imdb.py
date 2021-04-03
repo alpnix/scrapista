@@ -298,18 +298,6 @@ class ImdbScraper:
 
 
 
-scraper = ImdbScraper()
-
-# movie_urls = [movie["url"] for movie in scraper.top_ranked_movies]
-# print(movie_urls[59])
-# movie_info_list = scraper.async_scrape_movies(movie_urls,checkpoints=1)
-
-# print(len(movie_info_list))
-
-# with open("results.txt","w",encoding="utf-8") as f:
-#     f.write(str(movie_info_list))
-
-
 
 # scraper = ImdbScraper()
 # start = perf_counter()
