@@ -2,8 +2,12 @@
 <br>
 
 
+## 0.2.1 (2021-03-04)
+---
 
-## 0.0.4 (2021-03-04)
+- Quick fix: test lines removed
+
+## 0.2.0 (2021-03-04)
 ---
 
 - Methods are renamed

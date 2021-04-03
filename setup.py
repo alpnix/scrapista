@@ -37,5 +37,4 @@ setup(
         "Operating System :: Microsoft :: Windows",
     ],
     keywords=['python', 'scrape', 'amazon', 'wikipedia', 'imdb', 'goodreads', 'web', 'data mining', 'web scraping'],
-    include_package_data=True,
 )
