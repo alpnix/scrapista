@@ -39,7 +39,6 @@ class GoodReadsScraper:
                 likes = int(get_count(like_tag.get_text("",strip=True)))
             except Exception as e:
                 likes = "N/A"
-                print("likes|", e)
                 pass
 
             try:
@@ -49,14 +48,12 @@ class GoodReadsScraper:
                         quote_text = quoteText
 
             except Exception as e:
-                print("quote|", e)
                 continue
 
             try: 
                 by_tag = quote.select_one(".authorOrTitle")
                 by = by_tag.get_text("",strip=True)
             except Exception as e:
-                print("by|", e)
                 by = "Anonymous"
             
 
@@ -71,14 +68,14 @@ class GoodReadsScraper:
         return quotes_list
 
 
-    def scrape_custom_quotes(self,tag,page=1):
+    def scrape_quotes_by_tag(self,tag,page=1):
         """
             This function expects a tag of a quote and a page number 
             and it will return a quote object in json form.
         """
 
         if page > 100: 
-            raise(BaseException("page number should be between 1-100"))
+            raise(Exception("invalid page number: page number should be between 1-100"))
 
         url = f"https://www.goodreads.com/quotes/tag/{tag}?page={page}"
         try:
@@ -97,7 +94,6 @@ class GoodReadsScraper:
                 likes = int(get_count(like_tag.get_text("",strip=True)))
             except Exception as e:
                 likes = "N/A"
-                print("likes|", e)
                 pass
 
             try:
@@ -107,14 +103,12 @@ class GoodReadsScraper:
                         quote_text = quoteText
 
             except Exception as e:
-                print("quote|", e)
                 continue
 
             try: 
                 by_tag = quote.select_one(".authorOrTitle")
                 by = by_tag.get_text("",strip=True)
             except Exception as e:
-                print("by|", e)
                 by = "Anonymous"
             
 
@@ -148,7 +142,7 @@ class GoodReadsScraper:
             try:
                 link = wrapper.find("a")
             except: 
-                raise(BaseException("Genre is not a valid genre"))
+                raise(Exception("Genre is not a valid genre"))
             else: 
                 links.append(link)
 
@@ -157,24 +151,19 @@ class GoodReadsScraper:
             try: 
                 images.append(link.find("img"))
             except Exception as e:
-                print(e)
                 pass
         
-        # print("images:",images)
-        # print("links:", links)
         for link, image in zip(links,images): 
 
             try: 
                 book_url = self.base_url + link["href"]
             except Exception as e:
-                print(e)
                 book_url = "N/A"
                 pass
 
             try: 
                 book_title = image["alt"]
             except Exception as e: 
-                print(e)
                 if not book_url: 
                     continue
                 book_title = "N/A"
@@ -185,14 +174,13 @@ class GoodReadsScraper:
                 cover_url = image["src"]
             except Exception as e:
                 cover_url = "N/A"
-                print(e)
                 pass
 
             book_object = {
                 "title": book_title,
                 "genre": genre,
-                "book_url": book_url,
-                "cover_url": cover_url,
+                "url": book_url,
+                "img_src": cover_url,
             }
 
             book_data_list.append(book_object)
@@ -218,7 +206,6 @@ class GoodReadsScraper:
             title = title_tag.get_text("",strip=True)
         except Exception as e: 
             title = None
-            print(e)
             pass
 
         try: 
@@ -226,7 +213,6 @@ class GoodReadsScraper:
             book_cover = book_cover_tag["src"]
         except Exception as e:
             book_cover = None
-            print(e)
             pass
 
         try:
@@ -234,7 +220,6 @@ class GoodReadsScraper:
             rating = float(rating_tag.get_text("",strip=True))
         except Exception as e:
             rating = None
-            print(e)
             pass
 
         try:
@@ -242,7 +227,6 @@ class GoodReadsScraper:
             rating_count = get_count(rating_count_tag.get_text("",strip=True))
         except Exception as e:
             rating_count = None
-            print(e)
             pass
 
         try:
@@ -250,16 +234,15 @@ class GoodReadsScraper:
            review_count = get_count(review_count_tag.get_text("",strip=True))
         except Exception as e:
             review_count = None
-            print(e)
             pass
 
             
         book_object = {
-            "title": title,
+            "name": title,
             "rating(5)": rating,
             "rating_count": rating_count,
             "review_count": review_count,
-            "cover_url": book_cover
+            "img_src": book_cover
         }
 
 
@@ -283,11 +266,22 @@ class GoodReadsScraper:
         return book_list
 
 
+start = perf_counter()
+scraper = GoodReadsScraper()
+
+adventure_urls = [movie["url"] for movie in scraper.scrape_books_by_genre("adventure")]
+print(len(adventure_urls))
+books_data = scraper.async_scrape_books(adventure_urls[:5])
+
+print(books_data)
+print(len(books_data))
+
+end = perf_counter()
+
+print(f"It took {round(end-start,2)} seconds(s)")
 # start = perf_counter()
 
 # gr = GoodReadsScraper()
-
-
 
 "getting most popular quotes"
 

@@ -34,7 +34,6 @@ class WikiScraper:
                 try: 
                     data_points.append(row.find_all("td")[1])
                 except Exception as e:  
-                    print(e)
                     pass
             
         for data in data_points:
@@ -44,7 +43,6 @@ class WikiScraper:
             try:
                 name = link_text.get_text("",strip=True)
             except Exception as e:
-                print(e)
                 pass
             else:
                 disney_movie["name"] = name
@@ -52,7 +50,6 @@ class WikiScraper:
             try: 
                 link = link_text["href"]
             except Exception as e: 
-                print(e)
                 pass
             else: 
                 if not(link[0] == "#"):
@@ -94,12 +91,12 @@ class WikiScraper:
                 link = link_tag["href"]
                 link = self.base_url+link
             except Exception as e:
-                print(e)
                 pass
             else:
                 movie_object["url"] = link
 
-            highest_grossing_movies.append(movie_object)
+            if any(movie_object):
+                highest_grossing_movies.append(movie_object)
         
         return highest_grossing_movies
 
@@ -126,12 +123,11 @@ class WikiScraper:
                 name = person_tag.get_text("",strip=True)
                 person_url = self.base_url + person_tag["href"]
             except Exception as e:
-                print(e)
                 pass
             else:
                 person_object = {
                     "name": name,
-                    "person_url": person_url,
+                    "url": person_url,
                 }
 
                 people_list.append(person_object)
@@ -162,7 +158,7 @@ class WikiScraper:
         for idx, row in enumerate(info_box.find_all("tr")):
 
             if idx == 0: 
-                movie_info["title"] = row.get_text()
+                movie_info["Name"] = row.get_text()
             
             if idx == 1: 
                 continue
@@ -178,7 +174,6 @@ class WikiScraper:
                     header = row.find("th").get_text(" ", strip=True)
                     data = row.find("td").get_text(" ", strip=True)
                 except Exception as e: 
-                    print(e)
                     pass
                 else: 
                     movie_info[header] = data
@@ -193,7 +188,6 @@ class WikiScraper:
             minute_unit = re.findall(minutes_unit_pattern,movie_info["Running time"])[-1]
             movie_info[f"Running time({minute_unit})"] = minutes
         except Exception as e:
-            print(e)
             pass
         else: 
             del movie_info["Running time"]
@@ -204,7 +198,6 @@ class WikiScraper:
             currency, gross = money_string_to_int(movie_info,"Box office")
             movie_info[f"Gross({currency})"] = gross
         except Exception as e:
-            print(e)
             pass
         else:
             del movie_info["Box office"]
@@ -213,7 +206,6 @@ class WikiScraper:
             currency, budget = money_string_to_int(movie_info,"Budget")
             movie_info[f"Budget({currency})"] = budget
         except Exception as e:
-            print(e)
             pass
         else:
             del movie_info["Budget"]
@@ -232,7 +224,7 @@ class WikiScraper:
 
         with concurrent.futures.ThreadPoolExecutor() as executor: 
             for url in urls:
-                future = executor.submit(self.scrape_movie_info,url)
+                future = executor.submit(self.scrape_movie,url)
                 data = future.result()
                 movies_urls.append(data)
 
@@ -247,6 +239,10 @@ class WikiScraper:
 
         put_year_limit(year,1920)
 
+        try:
+            year = int(year)
+        except:
+            raise(Exception("Please enter a valid year"))
 
         url = f"https://en.wikipedia.org/wiki/{year}_in_film"
         r = requests.get(url)
@@ -260,7 +256,7 @@ class WikiScraper:
             if ul:
                 lists.append(ul)
 
-        def scrape_movies_year_list(ul):
+        def scrape_movies_year_list(ul,movie_list):
             list_items = ul.find_all("li")
 
             for idx, item in enumerate(list_items):
@@ -270,19 +266,17 @@ class WikiScraper:
                     movie_title = movie_tag.get_text("",strip=True)
                     movie_url = movie_tag["href"]
                 except Exception as e:
-                    print(e)
                     pass
                 else:
-                    movie_object["title"] = movie_title
-                    movie_object["movie_url"] = self.base_url + movie_url
-                    return movie_object
+                    movie_object["name"] = movie_title
+                    movie_object["url"] = self.base_url + movie_url
+                    if movie_object not in movie_list:
+                        movie_list.append(movie_object)
 
         movie_list = []
 
         for ul in lists: 
-            movie_data = scrape_movies_year_list(ul)
-            if movie_data and movie_data not in movie_list:
-                movie_list.append(movie_data)
+            movie_data = scrape_movies_year_list(ul,movie_list)
 
         if year >= 2004: 
 
@@ -294,12 +288,11 @@ class WikiScraper:
                     movie_url = self.base_url + movie_tag["href"]
                     movie_title = movie_tag.get_text("",strip=True)
                 except Exception as e:
-                    print(e) 
                     pass
                 else:
                     movie_object = {
-                        "title": movie_title,
-                        "movie_url": movie_url
+                        "name": movie_title,
+                        "url": movie_url
                     }
                     movie_list.append(movie_object)
                 
@@ -331,7 +324,6 @@ class WikiScraper:
                     if headers.get_text("",strip=True):
                         title_index = idx
             except Exception as e: 
-                print(e)
                 pass
 
             body = table.find("tbody")
@@ -343,12 +335,11 @@ class WikiScraper:
                     movie_url = self.base_url + movie_tag["href"]
                     movie_title = movie_tag.get_text("",strip=True)
                 except Exception as e: 
-                    print(e)
                     pass
                 else: 
                     movie_object = {
-                        "title": movie_title,
-                        "movie_url": movie_url
+                        "name": movie_title,
+                        "url": movie_url
                     }
                     movie_list.append(movie_object)
 
@@ -363,6 +354,10 @@ class WikiScraper:
             about that person
             infobox biography vcard
         """
+
+        if not name and not url:
+            return None
+
         if not url: 
             url_name = "_".join(name.split())
             url = self.base_url + "/wiki/" + url_name
@@ -372,7 +367,7 @@ class WikiScraper:
         info_box = soup.select_one(".infobox.vcard")
 
         if not info_box: 
-            print(f"{url} table not found")
+            print(f"{url} data not found")
             return
 
         # removing all the suffix and sup element from the DOM
@@ -389,7 +384,6 @@ class WikiScraper:
         try:
             info_box.find(class_="honorific-suffix").decompose()
         except Exception as e:
-            print(e)
             pass
 
 
@@ -412,12 +406,11 @@ class WikiScraper:
                 try: 
                     header = row.find("th").get_text(" ", strip=True).replace("\xa0"," ")
                 except Exception as e: 
-                    print(e)
                     header = "Miscellaneous"
                 finally:
-                    items = [li.get_text(" ",strip=True).replace("\xa0"," ").replace("\u200b","") for li in row.find("ul").find_all("li")]
-
-                person_info[header] = items
+                    items = [li.get_text(" ",strip=True).replace("\xa0"," ").replace("\u200b","") for li in row.find("ul").find_all("li") if li.get_text(" ",strip=True)]
+                if items:
+                    person_info[header] = items
 
             # if there isn't any list scrape get items single 
             else: 
@@ -425,10 +418,15 @@ class WikiScraper:
                     header = row.find("th").string.replace("\xa0"," ")
                     data = row.find("td").get_text(" ",strip=True).replace("\xa0"," ").replace("\u200b","").replace("   "," ").replace("  ", " ").replace(" ,",",")
                 except Exception as e: 
-                    print(e)
                     pass
                 else: 
-                    person_info[header] = data
+                    if data:
+                        person_info[header] = data
+
+
+
+        """Now let's get to convert and clean up the data a little"""
+
 
         # removing spaces in website url
         if "Website" in person_info.keys():
@@ -438,7 +436,6 @@ class WikiScraper:
         try: 
             del person_info["Signature"]
         except Exception as e: 
-            print(e)
             pass            
 
         # removing sports years team data
@@ -446,7 +443,6 @@ class WikiScraper:
             if person_info["Years"] == "Team":
                 del person_info["Years"]
         except Exception as e:
-            print(e)
             pass
 
         # removing awards if it is full list
@@ -454,19 +450,16 @@ class WikiScraper:
             if person_info["Awards"] == "Full list":
                 del person_info["Awards"]
         except Exception as e:
-            print(e)
             pass
                         
 
         try: 
             age = get_age(person_info,"Born")
         except Exception as e: 
-            print(e)
             try:
                 age = get_age("Date of birth")
                 person_info["Age"] = age
             except Exception as e: 
-                print(e)
                 pass
         else: 
             person_info["Age"] = age
@@ -475,14 +468,12 @@ class WikiScraper:
         try: 
             bdate = get_bdate(person_info,"Born")
         except Exception as e: 
-            print("born2 |",e)
             try: 
                 person_info["Date of birth"] = person_info["Date of birth"].strip()
                 if not person_info["Date of birth"]:
                     del person_info["Date of birth"]
 
             except Exception as e:
-                print("born2.2 |",e)
                 pass
         else: 
             person_info["Birth Date"] = bdate
@@ -491,9 +482,9 @@ class WikiScraper:
         
         # children number converted to an integer
         try: 
-            person_info["Children"] = int(person_info["Children"])
+            children_count = re.findall("\d+",person_info["Children"])[0]
+            person_info["Children"] = int(children_count)
         except Exception as e: 
-            print("children |",e)
             pass
 
 
@@ -530,10 +521,10 @@ class WikiScraper:
                 person_info["Spouse(s)"] = person_info["Spouse(s)"].strip()
                 spouse_list = person_info["Spouse(s)"].split("   ")
         except Exception as e: 
-            print("spouses |",e)
             pass
         else: 
-            person_info["Spouse(s)"] = spouse_list
+            if spouse_list:
+                person_info["Spouse(s)"] = spouse_list
 
         
         # cleaning the single data spouse
@@ -549,7 +540,6 @@ class WikiScraper:
                     present = "-present"
                 person_info["Spouse"] = person_info["Spouse"].replace(result,"("+interval+present+")")   
         except Exception as e: 
-            print("spouse |",e)
             pass
         else:
             person_info["Spouse"] = person_info["Spouse"].strip()
@@ -566,7 +556,6 @@ class WikiScraper:
                 elif "million" in person_info["Net worth"]: 
                     person_info["Net worth("+currency+")"] = 1_000_000 * float(results[0])
         except Exception as e:
-            print("net worth |",e)
             pass
         else: 
             del person_info["Net worth"]
@@ -582,33 +571,36 @@ class WikiScraper:
             method synchronously
         """ 
 
-        if type(urls) == dict:
-            urls = [person["person_url"] for person in urls]
-
         people_info = []
 
         if names: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 for name in names:
-                    future = executor.submit(self.scrape_person_info,name=name)
+                    future = executor.submit(self.scrape_person,name=name)
                     person_info = future.result()
                     people_info.append(person_info)
         else: 
+            if not urls:
+                return None
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 for url in urls:
-                    future = executor.submit(self.scrape_person_info,url=url)
+                    future = executor.submit(self.scrape_person,url=url)
                     person_info = future.result()
                     people_info.append(person_info)
 
         return people_info
 
 
-    def scrape_custom(self,url="",title=""):
+    def scrape_custom(self,url="",name=""):
         """
             This method is a vague one, you can pass in the url of an event, company, or even a place. This function will return the data on the info box if present, otherwise it will return None 
         """
+
+        if not url and not name:
+            return None
+
         if not url:
-            url = "https://en.wikipedia.org/wiki/" + title
+            url = "https://en.wikipedia.org/wiki/" + name
         r = requests.get(url)
         soup = BeautifulSoup(r.content, "html.parser")
 
@@ -631,20 +623,20 @@ class WikiScraper:
 
         caption = info_box.find("caption")
         if caption: 
-            custom_info["Title"] = caption.get_text(" ",strip=True).replace("\xa0", " ")
+            custom_info["Name"] = caption.get_text(" ",strip=True).replace("\xa0", " ")
 
 
         for idx, row in enumerate(info_box.find_all("tr")):
 
-            if idx == 0 and "Title" not in custom_info.keys(): 
-                custom_info["Title"] = row.get_text("",strip=True).replace("\xa0", " ")
+            if idx == 0 and "Name" not in custom_info.keys(): 
+                custom_info["Name"] = row.get_text("",strip=True).replace("\xa0", " ")
             
             if row.find("td") and row.find("ul"):
                 try: 
                     header = row.find("th").get_text(" ", strip=True).replace("\xa0"," ")
                     items = [li.get_text(" ",strip=True).replace("\xa0"," ") for li in row.find("ul").find_all("li")]
                 except Exception as e:
-                    print(e)
+                    pass
                 else:
                     custom_info[header] = items
 
@@ -657,7 +649,6 @@ class WikiScraper:
                         data = go_to_url.find("a")["href"]
                         
                 except Exception as e: 
-                    print(e)
                     pass
                 else: 
                     custom_info[header] = data
@@ -672,7 +663,6 @@ class WikiScraper:
             minute_unit = re.findall(minutes_unit_pattern,custom_info["Running time"])[-1]
             movie_info[f"Running time({minute_unit})"] = minutes
         except Exception as e:
-            print(e)
             pass
         else: 
             del custom_info["Running time"]
@@ -683,7 +673,6 @@ class WikiScraper:
             currency, gross = money_string_to_int(custom_info,"Box office")
             movie_info[f"Gross({currency})"] = gross
         except Exception as e:
-            print(e)
             pass
         else:
             del custom_info["Box office"]
@@ -692,16 +681,14 @@ class WikiScraper:
             currency, budget = money_string_to_int(custom_info,"Budget")
             movie_info[f"Budget({currency})"] = budget
         except Exception as e:
-            print(e)
             pass
         else:
             del custom_info["Budget"]
 
+        if len(custom_info) < 2:
+            return
 
         return custom_info
-
-
-
 
 
 

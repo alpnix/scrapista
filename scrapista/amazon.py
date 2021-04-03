@@ -5,64 +5,59 @@ import threading as th
 import requests
 
 
-
 class AmazonScraper:
     """
         This class has some methods that scrape the amazon website 
         and return you some data. 
     """
-    def __init__(self,base_url="https://www.amazon.com",headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"},params={"language": "en", "currency": "USD"}):
+    def __init__(self,base_url="https://www.amazon.com",headers={"upgrade-insecure-requests": "1", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"},params={"language": "en", "currency": "USD"}):
         self.base_url = base_url
         self.headers = headers
         self.params = params
         self.tracked = []
-        
-        r = requests.get(f"https://www.x-rates.com/calculator/?from=EUR&to={params['currency']}&amount=1")
-        soup = BeautifulSoup(r.content, "html.parser")
-        
-        container = soup.select_one(".ccOutputRslt")
-        for span in container.find_all("span"):
-            span.decompose()
-
-        self._currency_ratio = float(container.get_text("",strip=True))
-
+    
     
     def scrape_keyword(self,keyword,data_list=[]):
-
         """
-            Scrape all the instances of a single element
+            This method will return every product on amazon related to the 
+            keyword you pass into the method
         """
 
-        url_keyword_addition = f"/s?k={keyword}&ref=nb_sb_noss_2"
-        url = self.base_url+url_keyword_addition
-        url = url.replace(self.base_url,"https://www.amazon.de")
-        r = requests.get(url,headers=self.headers,params=self.params)
+        keyword_addition = keyword.replace(" ","+")
+        url_keyword_addition = f"/s?k={keyword_addition}&ref=nb_sb_noss_2"
+        url = self.base_url + url_keyword_addition
 
+        try:
+            r = requests.get(url,headers=self.headers,params=self.params)
+        except:
+            return "Connection Error"
 
-        if not r.ok:
-            raise BaseException("unsuccessful request to: " + r.url)
 
         soup = BeautifulSoup(r.content, "html.parser")
         groups = soup.select(".s-result-item")
 
-        print(r.url)
-
         for group in groups: 
-
+            
             name_tag = group.select_one(".a-link-normal.a-text-normal")
             image = group.select_one(".s-image")
             stars = group.select_one(".a-icon-alt")
             price = group.select_one(".a-price-whole")
+            price_symbol_tag = group.select_one(".a-price-symbol")
 
             try: 
                 price_amount = price.get_text(strip=True).replace(",","")
-                price_amount = round(float(price_amount) * self._currency_ratio,2)
+                price_amount = float(price_amount)
             except: 
                 continue
 
+            try:
+                price_symbol = price_symbol_tag.get_text("",strip=True)
+                price_symbol = "(" + price_symbol + ")" 
+            except:
+                price_symbol = ""
+
             try: 
                 source = image["src"]
-                source = source.replace("www.amazon.de",self.base_url)
             except: 
                 source = "N/A"
 
@@ -84,12 +79,13 @@ class AmazonScraper:
                     continue
                 product_url = "N/A"
 
+            
             item_info = {
                 "name": product_name,
-                f"price({self.params['currency']})": price_amount,
+                "price"+price_symbol: price_amount,
                 "stars(5)": star_amount,
                 "url": product_url,
-                "img_source": source,
+                "img_src": source,
             }
             
             data_list.append(item_info)
@@ -108,7 +104,7 @@ class AmazonScraper:
         """
 
         if type(keywords) != list: 
-            raise BaseException("A list type is expected for 'keywords' argument")
+            raise Exception("A list type is expected for 'keywords' argument")
 
 
         for keyword in keywords: 
@@ -128,7 +124,7 @@ class AmazonScraper:
         """
 
         if type(keywords) != list: 
-            raise BaseException("A list type is expected for 'keywords' argument")
+            raise Exception("A list type is expected for 'keywords' argument")
         
         # alternative of ThreadExecutorPool
         """
@@ -152,22 +148,22 @@ class AmazonScraper:
 
     
     def track_item(self, url): 
-
         """
-            You will pass a list of urls and an interval, it returns the current price and state of all those items
+            Scrape all the instances of a single element
         """
 
-        url = url.replace("https://www.amazon.com","https://www.amazon.de")
-        r = requests.get(url,headers=self.headers,params=self.params)
+        try:
+            r = requests.get(url,headers=self.headers,params=self.params)
+        except:
+            return "Connection Error"
 
-        if not r.ok:
-            raise BaseException("unsuccessful request to: " + r.url)
             
         soup = BeautifulSoup(r.content, "html.parser")
 
         title_tag = soup.select_one("#productTitle")
-        stars_tag = soup.select_one(".a-icon.a-icon-star.a-star-4-5")
+        stars_tag = soup.select_one(".a-icon.a-icon-star")
         price_tag = soup.find(id="priceblock_ourprice")
+
         if not price_tag: 
             price_tag = soup.find(id="priceblock_dealprice")
         note_tag = soup.find(id="vatMessage")
@@ -182,22 +178,32 @@ class AmazonScraper:
             stars = stars_tag.get_text("|",strip=True)[:3].replace(",",".")
             stars = float(stars)
         except Exception as e: 
-            stars = None
+            stars = "N/A"
         
         try: 
-            price = price_tag.get_text("|",strip=True).replace(".","")
-            price = price.replace(",",".")
-            price_list = price.split(".")
-            price = price_list[0] + "." + price_list[1][:2]
-            price = round(float(price) * self._currency_ratio,2)          
+            price = price_tag.get_text("|",strip=True)
         except Exception as e: 
-            price = None
+            price = "N/A"
 
+        try:
+            price_int = price.replace(",","")[1:]
+            price_int = float(price_int)
+        except:
+            "N/A"
+        else:
+            price = price_int
 
+        try:
+            currency = self.params["currency"]
+            currency_addition = "(" + currency + ")"
+        except:
+            currency_addition = ""
+        
+        
         item_object = {
             "title": title,
             "stars(out of 5)": stars,
-            "price": price,
+            "price"+currency_addition: price,
         }
 
         if note_tag: 
@@ -217,7 +223,7 @@ class AmazonScraper:
         """
 
         if type(urls) != list: 
-            raise BaseException("A list type is expected for 'urls' argument")
+            raise Exception("A list type is expected for 'urls' argument")
 
         for url in urls: 
 
@@ -236,7 +242,7 @@ class AmazonScraper:
         """
 
         if type(urls) != list: 
-            raise BaseException("A list type is expected for 'urls' argument")
+            raise Exception("A list type is expected for 'urls' argument")
 
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -251,7 +257,25 @@ class AmazonScraper:
         return data_list
 
 
+start = perf_counter()
 
+scraper = AmazonScraper()
+
+url_data = scraper.scrape_keyword("basketball 1.2m hoop")
+
+
+# data = scraper.scrape_keywords(["mouse","keyboard","monitor","yellow pencilcase"])
+
+# print(data)
+urls = [product["url"] for product in url_data]
+
+data = scraper.async_track_items(urls[:5])
+
+print(data)
+print(len(data))
+
+end = perf_counter()
+print(f"It took {round(end-start,2)} seconds(s)")
 
 # params = {
 #     "language": "en", 
@@ -317,3 +341,6 @@ class AmazonScraper:
 
 # end = perf_counter()
 # print(f"In total it took {end-start:.2f} seconds")
+
+# scraper = AmazonScraper()
+# print(scraper.track_item("https://www.amazon.de/-/en/23-8-inch-Full-all-one/dp/B089PJ5S5B/ref=sr_1_3?currency=USD&dchild=1&keywords=computer&qid=1617312928&sr=8-3"))

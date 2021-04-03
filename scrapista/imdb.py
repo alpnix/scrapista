@@ -15,7 +15,7 @@ class ImdbScraper:
         pass
 
     @property
-    def top_movies(self):
+    def top_ranked_movies(self):
         
         r = requests.get("https://www.imdb.com/chart/top/")
         soup = BeautifulSoup(r.content, "html.parser")
@@ -37,10 +37,10 @@ class ImdbScraper:
             rating = rating_tag.get_text(" ", strip=True)
 
             movie_object = {
-                "title": title,
+                "name": title,
                 "imdb_rating": float(rating),
-                "movie_url": movie_src,
-                "image_source": img_src, 
+                "url": movie_src,
+                "img_src": img_src, 
             }
 
             data_list.append(movie_object)
@@ -50,7 +50,7 @@ class ImdbScraper:
 
 
     @property
-    def most_popular_movies(self):
+    def popular_movies(self):
         """
             This method returns the most popular movies by the current date. It returns 100 movies. 
         """
@@ -75,7 +75,7 @@ class ImdbScraper:
                 except: 
                     name = None
 
-            data_list.append({"name": name, "link": link})
+            data_list.append({"name": name, "url": link})
 
         return data_list    
         
@@ -103,7 +103,9 @@ class ImdbScraper:
             return []
         else: 
             for i in range(len(movie_names)):
-                movie_data.append({"name": movie_names[i],"link": movie_urls[i]})
+                movie_object = {"name": movie_names[i],"url": movie_urls[i]}
+                if movie_object not in movie_data:
+                    movie_data.append(movie_object)
 
         return movie_data
 
@@ -115,12 +117,21 @@ class ImdbScraper:
 
 
         title = soup.find("h1").get_text("",strip=True)
+        
+        try:
+            rating_count = int(soup.find(itemprop="ratingCount").get_text("", strip=True).replace(",",""))
+        except:
+            rating_count = "N/A"
 
-        rating_count = int(soup.find(itemprop="ratingCount").get_text("", strip=True).replace(",",""))
+        try:
+            rating_value = float(soup.find(itemprop="ratingValue").get_text("",strip=True).replace(",",""))
+        except:
+            rating_value = "N/A"
 
-        rating_value = float(soup.find(itemprop="ratingValue").get_text("",strip=True).replace(",",""))
-
-        running_time = soup.select_one(".title_wrapper .subtext time").get_text("",strip=True)
+        try:
+            running_time = soup.select_one(".title_wrapper .subtext time").get_text("",strip=True)
+        except:
+            running_time = "N/A"
 
         def get_running_minutes(str):
             minutes = 0
@@ -130,42 +141,54 @@ class ImdbScraper:
                 hours = re.findall(hour_pattern,str)[0]
                 minutes += int(hours[0]) * 60
             except Exception as e: 
-                print("minute conversion|", e)
+                pass
             finally:
                 try:
                     minutes_min = re.findall(minute_pattern,str)[0]
                     minutes += int(re.findall("\d+",minutes_min)[0])
                     return minutes
                 except Exception as e: 
-                    print(e)
                     return minutes
 
         running_time_int = get_running_minutes(running_time)
 
-        *genre_tags, release_tag = soup.select(".title_wrapper .subtext a")
+        try:
+            *genre_tags, release_tag = soup.select(".title_wrapper .subtext a")
 
-        genres = [genre.get_text("",strip=True) for genre in genre_tags]
+            genres = [genre.get_text("",strip=True) for genre in genre_tags]
 
-        release = release_tag.get_text("",strip=True)
-
+            release = release_tag.get_text("",strip=True)
+        except:
+            genres = []
+            release = "N/A"
 
         restriction = list(soup.select_one(".title_wrapper .subtext").stripped_strings)[0]
         if len(restriction) > 4: 
             restriction = "R?"
             
-        trailer = self.base_url + soup.find("a", class_=["video-modal"])["href"]
+        try:
+            trailer = self.base_url + soup.find("a", class_=["video-modal"])["href"]
+        except:
+            trailer = self.base_url + "/404.html"
 
-        image_source = soup.select_one(".poster img")["src"]
+        try:
+            image_source = soup.select_one(".poster img")["src"]
+        except:
+            image_source = self.base_url + "/404.html"
 
         try:
             metascore = float(soup.select_one(".metacriticScore span").get_text("",strip=True))
         except: 
             metascore = "N/A"
 
-        review_tag, critic_tag = soup.select(".titleReviewBarItem.titleReviewbarItemBorder .subText a")
+        try:
+            review_tag, critic_tag = soup.select(".titleReviewBarItem.titleReviewbarItemBorder .subText a")
+            review_count = get_count(review_tag.get_text("",strip=True))
+            critic_count = get_count(critic_tag.get_text("",strip=True))
+        except: 
+            review_count = "-"
+            critic_count = "-"
 
-        review_count = get_count(review_tag.get_text("",strip=True))
-        critic_count = get_count(critic_tag.get_text("",strip=True))
 
         cast_table = soup.select_one("table.cast_list")
 
@@ -174,7 +197,6 @@ class ImdbScraper:
             try: 
                 cast_list.append(row.find_all("td")[1].get_text("",strip=True))
             except Exception as e:
-                print(e)
                 pass
             
         
@@ -182,7 +204,7 @@ class ImdbScraper:
 
 
         movie_object = {
-            "title": title,
+            "name": title,
             "rating_count": rating_count,
             "rating_value": rating_value,
             "running_time(min)": running_time_int,
@@ -208,29 +230,31 @@ class ImdbScraper:
                 a_tags = [a_tags for a_tags in row.find_all("a",href=re.compile("^/name"))]
                 data = [a_tag.get_text("",strip=True) for a_tag in a_tags]
             except Exception as e:
-                print("summary gather|",e)
                 pass
             else:
                 movie_object[header] = data
 
-        movie_object["cast_list"] = cast_list
+        movie_object["cast"] = cast_list
 
 
         return movie_object
     
 
-    def async_scrape_movies(self,urls):
+    def async_scrape_movies(self,urls,checkpoints=False):
         """
             This function scrapes each movie asynchronously
             instead of scraping them one by one
         """
 
+        if checkpoints == 0 or (type(checkpoints) == bool and checkpoints == True):
+            raise(Exception("checkpoint should be a positive integer"))
 
         all_movie_list = []
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for idx,url in enumerate(urls): 
-                print("Getting data... {}/250".format(idx))
+                if checkpoints and idx % checkpoints == 0:
+                    print("Getting data... {}/{}".format(idx,len(urls)))
                 future = executor.submit(self.scrape_movie, url)
                 movie_info = future.result()
                 all_movie_list.append(movie_info)
@@ -242,7 +266,7 @@ class ImdbScraper:
         """
             This method returns the actors that were born today or optionally 
             you can pass a day as an argument and get the actors that were born
-            in that day. P.s. date format is month-day eg '03-26'
+            in that day. P.s. date format is month-day eg '05-24'
         """
 
         if not date: 
@@ -261,12 +285,29 @@ class ImdbScraper:
         try:
             actor_names = [tag.get_text("",strip=True) for tag in actor_tags]
 
-        except Exception as e: 
-            print(e)
-            return []
+        except Exception as e:
+            pass
+
+
+        if actor_names == []:
+            raise(Exception("date format is month-day eg. 05-24"))
+
         
 
         return actor_names
+
+
+
+scraper = ImdbScraper()
+
+# movie_urls = [movie["url"] for movie in scraper.top_ranked_movies]
+# print(movie_urls[59])
+# movie_info_list = scraper.async_scrape_movies(movie_urls,checkpoints=1)
+
+# print(len(movie_info_list))
+
+# with open("results.txt","w",encoding="utf-8") as f:
+#     f.write(str(movie_info_list))
 
 
 
