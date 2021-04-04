@@ -1,7 +1,6 @@
 build/
 dist/
 scrapista.egg-info/
-MANITFEST.in
 .vscode/
 scrapista/__pycache__
 helpers/__pycache__
