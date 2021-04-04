@@ -25,7 +25,7 @@ important_people = ws.most_important_people
 print(important_people)
 """[{'name':'Barack Obama','url':'https://en.wikipedia.org/wiki/Barack_Obama'},{'name':'Xi Jinping','url':'https://en.wikipedia.org/wiki/Xi_Jinping'},...]"""
 ```
-You may also want to scrape data dynamically..
+It is also possible to scrape data dynamically..
 ```python
 ws = WikiScraper()
 movie_url = "https://en.wikipedia.org/wiki/The_Shawshank_Redemption"
