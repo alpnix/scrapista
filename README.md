@@ -68,6 +68,8 @@ print(br_data)
 ```
 ## Scraping Amazon: 
 ---
+
+Importing AmazonScraper class
 ```python 
 from scrapista.amazon import AmazonScraper
 
@@ -84,11 +86,10 @@ print(len(data_list)) # 60
 ```
 Or you can track a single item and get info about it..
 ```python
-url = "https://www.amazon.de/-/en/23-8-inch-Full-all-one/dp/B089PJ5S5B/ref=sr_1_3?currency=USD&dchild=1&keywords=computer&qid=1617312928&sr=8-3"
+url = "https://www.amazon.com/Ultra-Premium-Matte-Pencil-Eraser/dp/B06XRPJZ8W/ref=sr_1_1_sspa?dchild=1&keywords=black+pencil&qid=1617539119"
 
 item_info = ams.track_item(url)
 
 print(item_info)
-"""{'title': 'HP (23.8 inch / Full HD) all-in-one PC.', 'stars(out of 5)': 4.4, 'price': 702.44, 'note': 'Prices for items sold by Amazon include VAT. Depending on your delivery address, VAT may vary at Checkout. For other items, 
-please see details.'}"""
+"""{'title': 'Ultra Premium Matte Black Pencil (Black Wood Matte Black with Black Eraser)(#2HB Lead) (Matte Black)(Bag of 36)', 'stars(out of 5)': 4.6, 'price(USD)': 20.97}"""
 ```
