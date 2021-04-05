@@ -61,7 +61,7 @@ print(msft_data)
 """{'Name': 'Microsoft Corporation', 'Type': 'Public', 'Traded as': ['Nasdaq : MSFT', 'Nasdaq-100 component', 'DJIA component', 'S&P 100 component', 'S&P 500 component'], 'ISIN': 'US5949181045', 'Industry': ['Software development', 'Computer hardware',...]...}"""
 
 # alternatively,
-# you can pass in the name as well
+# you can pass in the name of the term as well
 br_data = ws.scrape_custom(name="Brazil")
 print(br_data)
 """{'Name': 'Federative Republic of Brazil(Portuguese)', 'Capital': 'Brasília 15°47′S 47°52′W  /  15.783°S 47.867°W', 'Largest city': 'São Paulo 23°33′S 46°38′W  /  23.550°S 46.633°W', 'Official language and national language': 'Portuguese', 'Ethnic groups (2010)': ['47.73% White', '43.13% Mixed',...]...}"""
