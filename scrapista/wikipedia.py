@@ -661,7 +661,7 @@ class WikiScraper:
 
             minutes = int(re.findall(minute_number_pattern,custom_info["Running time"])[0])
             minute_unit = re.findall(minutes_unit_pattern,custom_info["Running time"])[-1]
-            movie_info[f"Running time({minute_unit})"] = minutes
+            custom_info[f"Running time({minute_unit})"] = minutes
         except Exception as e:
             pass
         else: 
@@ -671,7 +671,7 @@ class WikiScraper:
         # getting the gross of the movie
         try: 
             currency, gross = money_string_to_int(custom_info,"Box office")
-            movie_info[f"Gross({currency})"] = gross
+            custom_info[f"Gross({currency})"] = gross
         except Exception as e:
             pass
         else:
@@ -679,7 +679,7 @@ class WikiScraper:
 
         try: 
             currency, budget = money_string_to_int(custom_info,"Budget")
-            movie_info[f"Budget({currency})"] = budget
+            custom_info[f"Budget({currency})"] = budget
         except Exception as e:
             pass
         else:

@@ -6,3 +6,4 @@ MANITFEST.in
 scrapista/__pycache__
 helpers/__pycache__
 notes.txt
+tests/practice.py
