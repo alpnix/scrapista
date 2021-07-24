@@ -1,8 +1,12 @@
-import scrapista
+from scrapista.wikipedia import WikiScraper
 
 
 
 
 
 
-print(dir(scrapista))
+
+
+
+
+print(dir(WikiScraper))

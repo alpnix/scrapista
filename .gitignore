@@ -1,9 +1,21 @@
+# ignoring build folders
 build/
+docs/build/
+
+# ignoring pypi store folders
 dist/
 scrapista.egg-info/
-MANITFEST.in
+
+# ignoring cache files
 .vscode/
 scrapista/__pycache__
 helpers/__pycache__
+.ipynb_checkpoints/
+
+# ignoring unnecessary docs folders
+docs/source/_templates/
+
+# not ready to be published
 notes.txt
 tests/practice.py
+scrapista/main.py
