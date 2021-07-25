@@ -25,7 +25,7 @@ important_people = ws.most_important_people
 print(important_people)
 """[{'name':'Barack Obama','url':'https://en.wikipedia.org/wiki/Barack_Obama'},{'name':'Xi Jinping','url':'https://en.wikipedia.org/wiki/Xi_Jinping'},...]"""
 ```
-You may also want to scrape data dynamically..
+It is also possible to scrape data dynamically..
 ```python
 ws = WikiScraper()
 movie_url = "https://en.wikipedia.org/wiki/The_Shawshank_Redemption"
@@ -61,13 +61,15 @@ print(msft_data)
 """{'Name': 'Microsoft Corporation', 'Type': 'Public', 'Traded as': ['Nasdaq : MSFT', 'Nasdaq-100 component', 'DJIA component', 'S&P 100 component', 'S&P 500 component'], 'ISIN': 'US5949181045', 'Industry': ['Software development', 'Computer hardware',...]...}"""
 
 # alternatively,
-# you can pass in the name as well
+# you can pass in the name of the term as well
 br_data = ws.scrape_custom(name="Brazil")
 print(br_data)
 """{'Name': 'Federative Republic of Brazil(Portuguese)', 'Capital': 'Brasília 15°47′S 47°52′W  /  15.783°S 47.867°W', 'Largest city': 'São Paulo 23°33′S 46°38′W  /  23.550°S 46.633°W', 'Official language and national language': 'Portuguese', 'Ethnic groups (2010)': ['47.73% White', '43.13% Mixed',...]...}"""
 ```
 ## Scraping Amazon: 
 ---
+
+Importing AmazonScraper class
 ```python 
 from scrapista.amazon import AmazonScraper
 
@@ -84,11 +86,10 @@ print(len(data_list)) # 60
 ```
 Or you can track a single item and get info about it..
 ```python
-url = "https://www.amazon.de/-/en/23-8-inch-Full-all-one/dp/B089PJ5S5B/ref=sr_1_3?currency=USD&dchild=1&keywords=computer&qid=1617312928&sr=8-3"
+url = "https://www.amazon.com/Ultra-Premium-Matte-Pencil-Eraser/dp/B06XRPJZ8W/ref=sr_1_1_sspa?dchild=1&keywords=black+pencil&qid=1617539119"
 
 item_info = ams.track_item(url)
 
 print(item_info)
-"""{'title': 'HP (23.8 inch / Full HD) all-in-one PC.', 'stars(out of 5)': 4.4, 'price': 702.44, 'note': 'Prices for items sold by Amazon include VAT. Depending on your delivery address, VAT may vary at Checkout. For other items, 
-please see details.'}"""
+"""{'title': 'Ultra Premium Matte Black Pencil (Black Wood Matte Black with Black Eraser)(#2HB Lead) (Matte Black)(Bag of 36)', 'stars(out of 5)': 4.6, 'price(USD)': 20.97}"""
 ```

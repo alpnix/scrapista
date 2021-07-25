@@ -5,7 +5,6 @@ docs/build/
 # ignoring pypi store folders
 dist/
 scrapista.egg-info/
-
 # ignoring cache files
 .vscode/
 scrapista/__pycache__
