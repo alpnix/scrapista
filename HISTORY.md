@@ -1,6 +1,10 @@
 # Release History
 <br>
 
+## 0.2.2 (2021-25-07)
+---
+
+- get_currency_ratio and get_word_info functions are added into helpers/helpers.py
 
 ## 0.2.1 (2021-03-04)
 ---

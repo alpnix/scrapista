@@ -79,7 +79,7 @@ def get_count(str):
 
 # this function scrapes and returns a word object 
 # you have to pass the word and the headers in json formot user-agent key is required
-def get_word_info(word, headers):
+def get_word_info(word, headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36"}):
     
     r = requests.get("https://dictionary.cambridge.org/dictionary/english/"+word, headers=headers)
 
