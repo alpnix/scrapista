@@ -12,7 +12,8 @@ helpers/__pycache__
 .ipynb_checkpoints/
 
 # ignoring unnecessary docs folders
-docs/source/_templates/
+docs/_build
+
 
 # not ready to be published
 notes.txt

@@ -1,6 +1,12 @@
 # Release History
 <br>
 
+## 0.2.3 (Still in process)
+---
+
+- Imdb scrape_movies method adjusted according to the new markup of imdb.com
+- First edition of documentation completed
+
 ## 0.2.2 (2021-25-07)
 ---
 

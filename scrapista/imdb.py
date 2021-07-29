@@ -7,6 +7,39 @@ import datetime as dt
 import requests
 import re
 
+# this function converts the string 110K to 110000
+def convert_multiples(string):
+    thousand_pattern = "(?i)K"
+    millions_pattern = "(?i)M"
+    number_pattern = "\d+"
+
+    thousand_match = re.findall(thousand_pattern, string)
+    millions_match = re.findall(millions_pattern, string)
+
+    left_numbers = int(re.findall(number_pattern, string)[0])
+
+    if thousand_match: 
+        return left_numbers * 1000
+ 
+    if millions_match:
+        return left_numbers * 1000000
+
+def get_running_minutes(str):
+    minutes = 0
+    hour_pattern = "\d+h"
+    minute_pattern = "\d+min"
+    try: 
+        hours = re.findall(hour_pattern,str)[0]
+        minutes += int(hours[0]) * 60
+    except Exception as e: 
+        pass
+    finally:
+        try:
+            minutes_min = re.findall(minute_pattern,str)[0]
+            minutes += int(re.findall("\d+",minutes_min)[0])
+            return minutes
+        except Exception as e: 
+            return minutes
 
 class ImdbScraper:
 
@@ -117,90 +150,86 @@ class ImdbScraper:
 
 
         title = soup.find("h1").get_text("",strip=True)
+
         
         try:
-            rating_count = int(soup.find(itemprop="ratingCount").get_text("", strip=True).replace(",",""))
-        except:
+            rating_count = convert_multiples(soup.select_one("div.AggregateRatingButton__TotalRatingAmount-sc-1ll29m0-3").get_text("", strip=True).replace(",",""))
+        except Exception as e:
             rating_count = "N/A"
 
         try:
-            rating_value = float(soup.find(itemprop="ratingValue").get_text("",strip=True).replace(",",""))
-        except:
+            rating_value = float(soup.select_one(".AggregateRatingButton__RatingScore-sc-1ll29m0-1").get_text("",strip=True).replace(",",""))
+        except Exception as e:
             rating_value = "N/A"
 
         try:
-            running_time = soup.select_one(".title_wrapper .subtext time").get_text("",strip=True)
+            running_time = soup.select(".ipc-inline-list__item")[2].get_text("",strip=True)
         except:
             running_time = "N/A"
 
-        def get_running_minutes(str):
-            minutes = 0
-            hour_pattern = "\d+h"
-            minute_pattern = "\d+min"
-            try: 
-                hours = re.findall(hour_pattern,str)[0]
-                minutes += int(hours[0]) * 60
-            except Exception as e: 
-                pass
-            finally:
-                try:
-                    minutes_min = re.findall(minute_pattern,str)[0]
-                    minutes += int(re.findall("\d+",minutes_min)[0])
-                    return minutes
-                except Exception as e: 
-                    return minutes
 
         running_time_int = get_running_minutes(running_time)
 
         try:
-            *genre_tags, release_tag = soup.select(".title_wrapper .subtext a")
+            genre_tags = soup.select(".GenresAndPlot__GenreChip-cum89p-3")
 
             genres = [genre.get_text("",strip=True) for genre in genre_tags]
 
+        except Exception as e:
+            print(e)
+            genres = []
+
+
+        try:
+            release_tag = soup.select_one(".TitleBlockMetaData__StyledTextLink-sc-12ein40-1")
             release = release_tag.get_text("",strip=True)
         except:
-            genres = []
             release = "N/A"
 
-        restriction = list(soup.select_one(".title_wrapper .subtext").stripped_strings)[0]
-        if len(restriction) > 4: 
-            restriction = "R?"
-            
+
         try:
-            trailer = self.base_url + soup.find("a", class_=["video-modal"])["href"]
+            restriction = list(soup.select(".ipc-inline-list__item")[1].stripped_strings)[0]
+            if len(restriction) > 4: 
+                restriction = "R?"
+        except:
+            restriction = None
+
+        try:
+            trailer = self.base_url + soup.find("a", class_=["ipc-lockup-overlay","Slate__SlateOverlay-ss6ccs-1"])["href"]
         except:
             trailer = self.base_url + "/404.html"
 
         try:
-            image_source = soup.select_one(".poster img")["src"]
+            image_source = self.base_url + soup.find("a", class_=["ipc-lockup-overlay","Slate__SlateOverlay-ss6ccs-1"])["href"]
         except:
             image_source = self.base_url + "/404.html"
 
         try:
-            metascore = float(soup.select_one(".metacriticScore span").get_text("",strip=True))
+            metascore = float(soup.select_one("span.score-meta").get_text("",strip=True))
         except: 
             metascore = "N/A"
 
         try:
-            review_tag, critic_tag = soup.select(".titleReviewBarItem.titleReviewbarItemBorder .subText a")
-            review_count = get_count(review_tag.get_text("",strip=True))
+            review_tag, critic_tag = soup.select("span.three-Elements .score")[:2]
+            review_count = convert_multiples(review_tag.get_text("",strip=True))
             critic_count = get_count(critic_tag.get_text("",strip=True))
-        except: 
+        except Exception as e: 
             review_count = "-"
             critic_count = "-"
 
+        try:
+            cast_table = soup.select("ul.ipc-metadata-list-item__list-content.ipc-inline-list--show-dividers.baseAlt")[-1]
 
-        cast_table = soup.select_one("table.cast_list")
-
-        cast_list = []
-        for row in cast_table.find_all("tr"):
-            try: 
-                cast_list.append(row.find_all("td")[1].get_text("",strip=True))
-            except Exception as e:
-                pass
-            
+            cast_list = []
+            for row in cast_table.find_all("li"):
+                try: 
+                    cast_list.append(row.find("a").get_text("",strip=True))
+                except Exception as e:
+                    pass
+        except:
+            pass        
         
-        summary = soup.select_one(".plot_summary")
+        summary = soup.select_one(".GenresAndPlot__TextContainerBreakpointXL-cum89p-2")
 
 
         movie_object = {
@@ -218,21 +247,24 @@ class ImdbScraper:
             "critic_count": critic_count,
         }
 
-        for row in summary.find_all("div"):
-            try:
-                header = row.find("h4").get_text("",strip=True)[:-1]
-                if header in ["Writer","Writers"]:
-                    header = "writer(s)"
-                elif header in ["Director","Directors"]:
-                    header = "director(s)"
-                elif header in ["Stars","Star"]: 
-                    header = "star(s)"
-                a_tags = [a_tags for a_tags in row.find_all("a",href=re.compile("^/name"))]
-                data = [a_tag.get_text("",strip=True) for a_tag in a_tags]
-            except Exception as e:
-                pass
-            else:
-                movie_object[header] = data
+        try:
+            for row in summary.find_all("div"):
+                try:
+                    header = row.find("h4").get_text("",strip=True)[:-1]
+                    if header in ["Writer","Writers"]:
+                        header = "writer(s)"
+                    elif header in ["Director","Directors"]:
+                        header = "director(s)"
+                    elif header in ["Stars","Star"]: 
+                        header = "star(s)"
+                    a_tags = [a_tags for a_tags in row.find_all("a",href=re.compile("^/name"))]
+                    data = [a_tag.get_text("",strip=True) for a_tag in a_tags]
+                except Exception as e:
+                    pass
+                else:
+                    movie_object[header] = data
+        except:
+            pass
 
         movie_object["cast"] = cast_list
 
@@ -246,7 +278,7 @@ class ImdbScraper:
             instead of scraping them one by one
         """
 
-        if checkpoints == 0 or (type(checkpoints) == bool and checkpoints == True):
+        if (checkpoints == 0 and type(checkpoints) != bool) or (type(checkpoints) == bool and checkpoints == True):
             raise(Exception("checkpoint should be a positive integer"))
 
         all_movie_list = []
@@ -353,3 +385,8 @@ class ImdbScraper:
 
 # end = perf_counter()
 # print(f"In total it took {round(end-start,2)} second(s)")
+
+ims = ImdbScraper()
+
+actors = ims.scrape_actors_by_bdate()
+print(actors)

@@ -146,7 +146,7 @@ Wikipedia is a huge website and it is not only limited to movies or famous peopl
 There are many more methods and details you can explore in WikiScraper objects. If you want to learn more about :ref:`WikiScraper click here<wikiscraper>`. Or you can check out the other scrapers in scrapista:
 
    * :ref:`AmazonScraper<amazonscraper>`
-   * :ref:`IMDbScraper<imdbscraper>`
+   * :ref:`ImdbScraper<imdbscraper>`
    * :ref:`GoodReadsScraper<goodreadsscraper>`
 
 You might also want to see `scrapista's full source code <https://github.com/alpnix/scrapista>`_ 
