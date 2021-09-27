@@ -1,6 +1,7 @@
 # Scrapista
 Scrapista helps with scraping datasets from some of the most popular websites such as Wikipedia, Amazon, etc.
 
+You can view the full documentation here: https://scrapista.readthedocs.io/en/latest/ or take a quick look at the essentials of scraping with Scrapista below.
 
 ## Installation
 ---
