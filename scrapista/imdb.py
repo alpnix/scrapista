@@ -386,7 +386,9 @@ class ImdbScraper:
 # end = perf_counter()
 # print(f"In total it took {round(end-start,2)} second(s)")
 
-ims = ImdbScraper()
 
-actors = ims.scrape_actors_by_bdate()
-print(actors)
+if __name__ == "__main__":     
+    ims = ImdbScraper()
+
+    actors = ims.scrape_actors_by_bdate()
+    print(actors)

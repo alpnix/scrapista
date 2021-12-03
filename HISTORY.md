@@ -1,7 +1,7 @@
 # Release History
 <br>
 
-## 0.2.3 (Still in process)
+## 0.2.3 
 ---
 
 - Imdb scrape_movies method adjusted according to the new markup of imdb.com
