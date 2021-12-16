@@ -18,7 +18,7 @@ docs/_build
 # not ready to be published
 notes.txt
 tests/practice.py
-scrapista/main.py
+scrapista/sandbox.py
 
 # deployment
 deploy.py
