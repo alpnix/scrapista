@@ -4,6 +4,12 @@ import concurrent.futures
 import threading as th
 import requests
 
+def clean_string(string):
+    string = string.replace("\n","")
+    string = string.replace("\t","")
+    string = string.strip()
+    return string
+
 
 class AmazonScraper:
     """
@@ -147,7 +153,7 @@ class AmazonScraper:
         return data_list
 
     
-    def track_item(self, url): 
+    def scrape_item(self, url): 
         """
             Scrape all the instances of a single element
         """
@@ -160,14 +166,12 @@ class AmazonScraper:
             
         soup = BeautifulSoup(r.content, "html.parser")
 
-        title_tag = soup.select_one("#productTitle")
+        title_tag = soup.select_one("h1#title")
         stars_tag = soup.select_one(".a-icon.a-icon-star")
-        price_tag = soup.find(id="priceblock_ourprice")
+        price_tag = soup.find(id="price_inside_buybox")
 
         if not price_tag: 
             price_tag = soup.find(id="priceblock_dealprice")
-        note_tag = soup.find(id="vatMessage")
-
 
         try: 
             title = title_tag.get_text("|",strip=True)
@@ -206,8 +210,35 @@ class AmazonScraper:
             "price"+currency_addition: price,
         }
 
-        if note_tag: 
-            item_object["note"] = note_tag.get_text(" ",strip=True)
+        rows = soup.select("table.a-normal tr")
+
+        for row in rows:
+            try: 
+                key = clean_string(row.select("td")[0].get_text())
+                value = clean_string(row.select("td")[1].get_text())
+
+                if not bool(key) or not bool(value): 
+                    continue
+            except:
+                pass
+            else: 
+                item_object[key] = value
+
+        try:
+            note_list = soup.select_one("ul.a-unordered-list.a-vertical.a-spacing-mini")
+            note = note_list.get_text("").replace("\n","").strip().replace("\xa0","")
+            note_items = note_list.select("li")
+            notes = []
+            for item in note_items:
+                note = item.get_text("").replace("\n","").strip().replace("\xa0","")
+                while "  " in note:
+                    note = note.replace("  ", " ")
+            
+                notes.append(note)
+
+            item_object["about"] = notes
+        except:
+            pass
 
         if url not in self.tracked: 
             self.tracked.append(url)
@@ -216,7 +247,7 @@ class AmazonScraper:
         return item_object
 
 
-    def track_items(self,urls,data_list=[]):
+    def scrape_items(self,urls,data_list=[]):
         """
             Track all the items that are passed into the function as 
             list type. 
@@ -227,7 +258,7 @@ class AmazonScraper:
 
         for url in urls: 
 
-            data = self.track_item(url)
+            data = self.scrape_item(url)
             data_list.append(data)
 
         data_list = list(filter(lambda x: any(x.values()), data_list)) 
@@ -235,7 +266,7 @@ class AmazonScraper:
         return data_list
 
 
-    def async_track_items(self,urls,data_list=[]):
+    def async_scrape_items(self,urls,data_list=[]):
         """
             This function is the asynchronous version of the 
             AmazonScraper.track_items function 
@@ -247,7 +278,7 @@ class AmazonScraper:
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for url in urls: 
-                future = executor.submit(self.track_item,url)
+                future = executor.submit(self.scrape_item,url)
                 data = future.result()
                 data_list.append(data)
 
@@ -325,3 +356,7 @@ class AmazonScraper:
 
 # scraper = AmazonScraper()
 # print(scraper.track_item("https://www.amazon.de/-/en/23-8-inch-Full-all-one/dp/B089PJ5S5B/ref=sr_1_3?currency=USD&dchild=1&keywords=computer&qid=1617312928&sr=8-3"))
+
+
+if __name__ == "__main__":
+    pass

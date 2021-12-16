@@ -5,17 +5,20 @@ docs/build/
 # ignoring pypi store folders
 dist/
 scrapista.egg-info/
+
 # ignoring cache files
 .vscode/
 scrapista/__pycache__
-helpers/__pycache__
+scrapista/helpers/__pycache__
 .ipynb_checkpoints/
 
 # ignoring unnecessary docs folders
 docs/_build
 
-
 # not ready to be published
 notes.txt
 tests/practice.py
 scrapista/main.py
+
+# deployment
+deploy.py

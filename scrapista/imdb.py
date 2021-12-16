@@ -27,7 +27,7 @@ def convert_multiples(string):
 def get_running_minutes(str):
     minutes = 0
     hour_pattern = "\d+h"
-    minute_pattern = "\d+min"
+    minute_pattern = "\d+m"
     try: 
         hours = re.findall(hour_pattern,str)[0]
         minutes += int(hours[0]) * 60
@@ -143,8 +143,21 @@ class ImdbScraper:
         return movie_data
 
 
-    def scrape_movie(self,url):
-        
+    def scrape_movie(self,url="", name=""):
+        if not name and not url:
+            raise BaseException("Please enter either name or url of the movie")
+
+        if not url:
+            urlRequest = requests.get("https://www.imdb.com/find?q="+name)
+            soup = BeautifulSoup(urlRequest.content, "html.parser")
+            aTag = soup.select_one(".result_text a")
+            try: 
+                url = self.base_url+aTag.get("href")
+            except: 
+                if not url:
+                    raise BaseException("URL not found")
+            
+
         r = requests.get(url)
         soup = BeautifulSoup(r.content, "html.parser")
 
@@ -195,14 +208,14 @@ class ImdbScraper:
             restriction = None
 
         try:
-            trailer = self.base_url + soup.find("a", class_=["ipc-lockup-overlay","Slate__SlateOverlay-ss6ccs-1"])["href"]
+            trailer = self.base_url + soup.select_one("a.ipc-lockup-overlay.Slatestyles__SlateOverlay-sc-1t1hgxj-2")["href"]
         except:
             trailer = self.base_url + "/404.html"
 
         try:
-            image_source = self.base_url + soup.find("a", class_=["ipc-lockup-overlay","Slate__SlateOverlay-ss6ccs-1"])["href"]
+            mediaviewer = self.base_url + soup.find("a", class_=["ipc-lockup-overlay","Slate__SlateOverlay-ss6ccs-1"])["href"]
         except:
-            image_source = self.base_url + "/404.html"
+            mediaviewer = self.base_url + "/404.html"
 
         try:
             metascore = float(soup.select_one("span.score-meta").get_text("",strip=True))
@@ -241,7 +254,7 @@ class ImdbScraper:
             "release": release,
             "restriction": restriction,
             "trailer": trailer,
-            "image_source": image_source,
+            "mediaviewer": mediaviewer,
             "metascore": metascore,
             "review_count": review_count,
             "critic_count": critic_count,
@@ -266,7 +279,7 @@ class ImdbScraper:
         except:
             pass
 
-        movie_object["cast"] = cast_list
+        movie_object["starring"] = cast_list
 
 
         return movie_object
@@ -388,7 +401,4 @@ class ImdbScraper:
 
 
 if __name__ == "__main__":     
-    ims = ImdbScraper()
-
-    actors = ims.scrape_actors_by_bdate()
-    print(actors)
+    pass
